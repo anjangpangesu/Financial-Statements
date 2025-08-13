@@ -1,0 +1,868 @@
+// Data storage
+let transaksi = JSON.parse(localStorage.getItem('transaksi')) || [];
+let hutangList = JSON.parse(localStorage.getItem('hutangList')) || [];
+let cicilanList = JSON.parse(localStorage.getItem('cicilanList')) || [];
+let reminderList = JSON.parse(localStorage.getItem('reminderList')) || [];
+
+// Nomor WhatsApp untuk pengingat otomatis
+const MY_WHATSAPP = '6281213699618';
+
+// Tab functionality
+function showTab(tabName) {
+    const allTabs = document.querySelectorAll('.tab-content');
+    const tabKeuanganBtn = document.getElementById('tab-keuangan');
+    const tabHutangBtn = document.getElementById('tab-hutang');
+    const targetTab = document.getElementById(`content-${tabName}`);
+
+    // Hide all tabs instantly
+    allTabs.forEach(tab => {
+        tab.classList.add('hidden');
+        tab.style.animation = '';
+    });
+
+    // Reset all buttons to default state
+    tabKeuanganBtn.classList.remove('bg-blue-500', 'text-white', 'hover:bg-blue-600');
+    tabKeuanganBtn.classList.add('text-gray-600', 'hover:bg-gray-100', 'border', 'border-gray-300');
+    tabHutangBtn.classList.remove('bg-purple-500', 'text-white', 'hover:bg-purple-600');
+    tabHutangBtn.classList.add('text-gray-600', 'hover:bg-purple-100', 'border', 'border-purple-300', 'hover:border-purple-400');
+
+    // Show the target tab instantly
+    targetTab.classList.remove('hidden');
+
+    // Set active button
+    if (tabName === 'keuangan') {
+        tabKeuanganBtn.classList.add('bg-blue-500', 'text-white', 'hover:bg-blue-600');
+        tabKeuanganBtn.classList.remove('text-gray-600', 'hover:bg-gray-100', 'border', 'border-gray-300');
+    } else if (tabName === 'hutang') {
+        tabHutangBtn.classList.add('bg-purple-500', 'text-white', 'hover:bg-purple-600');
+        tabHutangBtn.classList.remove('text-gray-600', 'hover:bg-purple-100', 'border', 'border-purple-300', 'hover:border-purple-400');
+    }
+}
+
+// Format currency
+function formatCurrency(amount) {
+    return new Intl.NumberFormat('id-ID', {
+        style: 'currency',
+        currency: 'IDR',
+        minimumFractionDigits: 0
+    }).format(amount);
+}
+
+// Format date to Indonesian format
+function formatDateIndonesian(date) {
+    const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+
+    const dayName = days[date.getDay()];
+    const day = date.getDate();
+    const month = months[date.getMonth()];
+    const year = date.getFullYear();
+
+    return `${dayName}, ${day} ${month} ${year}`;
+}
+
+// Show notification
+function showNotification(message, type = 'success') {
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 z-50 px-6 py-4 rounded-lg shadow-lg text-white font-semibold text-sm transform transition-all duration-300 ${type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500'
+        }`;
+    notification.textContent = message;
+
+    document.body.appendChild(notification);
+
+    setTimeout(() => {
+        notification.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+            document.body.removeChild(notification);
+        }, 300);
+    }, 3000);
+}
+
+// Show modal
+function showModal(content) {
+    document.getElementById('modal-content').innerHTML = content;
+    document.getElementById('modal-overlay').classList.remove('hidden');
+}
+
+// Hide modal
+function hideModal() {
+    document.getElementById('modal-overlay').classList.add('hidden');
+}
+
+// Close modal when clicking overlay
+document.getElementById('modal-overlay').addEventListener('click', function (e) {
+    if (e.target === this) {
+        hideModal();
+    }
+});
+
+// Update summary
+function updateSummary() {
+    const totalPemasukan = transaksi
+        .filter(t => t.type === 'pemasukan')
+        .reduce((sum, t) => sum + t.amount, 0);
+
+    const totalPengeluaran = transaksi
+        .filter(t => t.type === 'pengeluaran')
+        .reduce((sum, t) => sum + t.amount, 0);
+
+    const saldo = totalPemasukan - totalPengeluaran;
+
+    document.getElementById('total-pemasukan').textContent = formatCurrency(totalPemasukan);
+    document.getElementById('total-pengeluaran').textContent = formatCurrency(totalPengeluaran);
+    document.getElementById('saldo-terkini').textContent = formatCurrency(saldo);
+}
+
+// Update summary hutang
+function updateSummaryHutang() {
+    const totalPeminjam = hutangList.length;
+    const totalHutangBelumLunas = hutangList.filter(h => h.status === 'belum_lunas').length;
+
+    const totalUangDiutangin = hutangList.reduce((sum, h) => {
+        if (h.status === 'belum_lunas') {
+            const totalCicilan = cicilanList
+                .filter(c => c.hutangId == h.id)
+                .reduce((cicilanSum, c) => cicilanSum + c.jumlah, 0);
+            return sum + (h.jumlah - totalCicilan);
+        }
+        return sum;
+    }, 0);
+
+    document.getElementById('total-peminjam').textContent = totalPeminjam;
+    document.getElementById('total-hutang-belum-lunas').textContent = totalHutangBelumLunas;
+    document.getElementById('total-uang-diutangin').textContent = formatCurrency(totalUangDiutangin);
+}
+
+// Display transactions
+function displayTransactions(filter = 'semua') {
+    const container = document.getElementById('riwayat-transaksi');
+
+    let filteredTransaksi = transaksi;
+    if (filter !== 'semua') {
+        filteredTransaksi = transaksi.filter(t => t.type === filter);
+    }
+
+    if (filteredTransaksi.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-12">
+                <div class="w-20 h-20 bg-gradient-to-br from-blue-100 to-cyan-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <span class="text-3xl">📝</span>
+                </div>
+                <h3 class="text-lg font-bold text-gray-600 mb-2">Belum Ada Transaksi</h3>
+                <p class="text-gray-500 text-sm">Mulai tambahkan pemasukan atau pengeluaran Anda untuk melihat riwayat di sini</p>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = filteredTransaksi.map(t => `
+        <div class="glass-card border-2 border-gray-100 rounded-lg p-4 relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-16 h-16 ${t.type === 'pemasukan' ? 'gradient-income' : 'gradient-expense'} opacity-10 rounded-full -mr-8 -mt-8"></div>
+            <div class="flex justify-between items-start relative z-10">
+                <div class="flex items-start flex-1">
+                    <div class="w-14 h-14 ${t.type === 'pemasukan' ? 'gradient-income' : 'gradient-expense'} rounded-lg flex items-center justify-center mr-4 shadow-lg">
+                        <span class="text-lg">${t.type === 'pemasukan' ? '💰' : '💸'}</span>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-lg text-gray-800 mb-2 capitalize">
+                            ${t.description}
+                        </h3>
+                        <p class="text-gray-500 text-sm font-medium flex items-center">
+                            <span class="mr-1">📅</span> ${t.date}
+                        </p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <p class="font-semibold text-base ${t.type === 'pemasukan' ? 'text-green-600' : 'text-red-600'} mb-2">
+                        ${t.type === 'pemasukan' ? '+' : '-'} ${formatCurrency(t.amount)}
+                    </p>
+                    <div class="flex gap-1">
+                        <button onclick="editTransaction('${t.id}')" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs font-semibold transition-all duration-300">
+                            Edit
+                        </button>
+                        <button onclick="deleteTransaction('${t.id}')" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs font-semibold transition-all duration-300">
+                            Hapus
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+// Filter transactions
+function filterTransactions() {
+    const filter = document.getElementById('filter-transaksi').value;
+    displayTransactions(filter);
+}
+
+// Add transaction
+function addTransaction(type, description, amount) {
+    const transaction = {
+        id: Date.now(),
+        type,
+        description,
+        amount: parseInt(amount),
+        date: formatDateIndonesian(new Date())
+    };
+
+    transaksi.unshift(transaction);
+    localStorage.setItem('transaksi', JSON.stringify(transaksi));
+
+    updateSummary();
+    displayTransactions();
+
+    const typeText = type === 'pemasukan' ? 'Pemasukan' : 'Pengeluaran';
+    showNotification(`${typeText} berhasil ditambahkan! Saldo telah terupdate.`, 'success');
+}
+
+// Display hutang
+function displayHutang(filter = 'semua') {
+    const container = document.getElementById('daftar-hutang');
+
+    let filteredHutang = hutangList;
+    if (filter !== 'semua') {
+        filteredHutang = hutangList.filter(h => h.status === filter);
+    }
+
+    if (filteredHutang.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-12">
+                <div class="w-20 h-20 bg-gradient-to-br from-purple-100 to-purple-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <span class="text-3xl">📝</span>
+                </div>
+                <h3 class="text-lg font-bold text-gray-600 mb-2">Belum Ada Data Hutang</h3>
+                <p class="text-gray-500 text-sm">Tambahkan data hutang untuk mulai mengelola piutang Anda dengan lebih baik</p>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = filteredHutang.map(h => {
+        const totalCicilan = cicilanList
+            .filter(c => c.hutangId == h.id)
+            .reduce((sum, c) => sum + c.jumlah, 0);
+
+        const sisaHutang = h.jumlah - totalCicilan;
+        const cicilanHutang = cicilanList.filter(c => c.hutangId == h.id);
+
+        return `
+            <div class="glass-card border-2 ${h.status === 'lunas' ? 'border-green-200 bg-gradient-to-r from-green-50/50 to-white' : 'border-gray-100'} rounded-lg p-6 relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-16 h-16 ${h.status === 'lunas' ? 'gradient-income' : 'gradient-debt'} opacity-10 rounded-full -mr-8 -mt-8"></div>
+                
+                <div class="flex items-start justify-between mb-4 relative z-10">
+                    <div class="flex items-start flex-1">
+                        <div class="w-14 h-14 ${h.status === 'lunas' ? 'gradient-income' : 'gradient-debt'} rounded-lg flex items-center justify-center mr-4 shadow-lg">
+                            <span class="text-xl">${h.status === 'lunas' ? '✅' : '💳'}</span>
+                        </div>
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2 mb-2">
+                                <h3 class="font-bold text-xl text-gray-800">${h.nama}</h3>
+                                ${h.status === 'lunas' ?
+                '<span class="inline-block bg-gradient-to-r from-green-100 to-green-200 text-green-600 text-xs px-3 py-1 rounded-full font-semibold">LUNAS</span>' :
+                '<span class="inline-block bg-gradient-to-r from-red-100 to-red-200 text-red-600 text-xs px-3 py-1 rounded-full font-semibold">BELUM LUNAS</span>'
+            }
+                            </div>
+                            <p class="text-gray-500 text-sm font-medium flex items-center mb-3">
+                                <span class="mr-1">📅</span> ${h.tanggal}
+                            </p>
+                            
+                            <div class="grid grid-cols-2 gap-4 mb-3 bg-gray-50 rounded-lg p-3">
+                                <div class="pr-3 border-r-2 border-gray-300">
+                                    <p class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1">Hutang Awal</p>
+                                    <p class="text-lg font-bold text-purple-600">${formatCurrency(h.jumlah)}</p>
+                                </div>
+                                <div class="pl-3">
+                                    ${h.status === 'lunas' ? `
+                                        <p class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1">Sudah Dibayar</p>
+                                        <p class="text-lg font-bold text-green-600">${formatCurrency(totalCicilan > 0 ? totalCicilan : h.jumlah)}</p>
+                                    ` : `
+                                        <p class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1">Sisa Hutang</p>
+                                        <p class="text-lg font-bold text-red-600">${formatCurrency(sisaHutang)}</p>
+                                    `}
+                                </div>
+                            </div>
+                            
+                            ${h.keterangan ? `
+                                <div class="bg-white/80 rounded-lg p-3 mb-3 border-l-4 border-blue-400">
+                                    <p class="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-1">Keterangan</p>
+                                    <p class="text-gray-700 text-sm capitalize">${h.keterangan}</p>
+                                </div>
+                            ` : ''}
+                            
+                            <div class="flex flex-wrap gap-2">
+                                ${h.status !== 'lunas' && h.whatsapp ? `
+                                    <button onclick="kirimPesan('${h.whatsapp}', '${h.nama}', ${sisaHutang})" 
+                                            class="gradient-income text-white px-3 py-2 rounded-lg text-xs font-semibold hover:scale-105 transition-all duration-300 shadow-lg modern-button flex items-center">
+                                        <span class="mr-1">📱</span> Ingatkan via WA
+                                    </button>
+                                ` : ''}
+                                
+                                ${h.status !== 'lunas' && h.email ? `
+                                    <button onclick="kirimEmail('${h.email}', '${h.nama}', ${sisaHutang})" 
+                                            class="bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-3 py-2 rounded-lg text-xs font-semibold hover:scale-105 transition-all duration-300 shadow-lg modern-button flex items-center">
+                                        <span class="mr-1">📧</span> Ingatkan via Email
+                                    </button>
+                                ` : ''}
+                                
+                                ${h.status !== 'lunas' ? `
+                                    <button onclick="bayarCicilan('${h.id}')" 
+                                            class="bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-3 py-2 rounded-lg text-xs font-semibold hover:scale-105 transition-all duration-300 shadow-lg modern-button flex items-center">
+                                        <span class="mr-1">💰</span> Bayar Cicilan
+                                    </button>
+                                    <button onclick="lunaskanHutang('${h.id}')" 
+                                            class="gradient-income text-white px-3 py-2 rounded-lg text-xs font-semibold hover:scale-105 transition-all duration-300 shadow-lg modern-button flex items-center">
+                                        <span class="mr-1">✅</span> Tandai Lunas
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="editHutang('${h.id}')" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-300 shadow-md">
+                            ✏️ Edit
+                        </button>
+                        <button onclick="deleteHutang('${h.id}')" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-300 shadow-md">
+                            🗑️ Hapus
+                        </button>
+                    </div>
+                </div>
+                
+                ${cicilanHutang.length > 0 ? `
+                    <div class="bg-blue-50 rounded-lg p-4 relative z-10">
+                        <h4 class="font-semibold text-blue-800 mb-3 flex items-center">
+                            <span class="mr-2">📋</span> Riwayat Cicilan
+                        </h4>
+                        <div class="space-y-2 max-h-32 overflow-y-auto">
+                            ${cicilanHutang.map(c => `
+                                <div class="flex justify-between items-center bg-white rounded-lg p-2">
+                                    <span class="text-blue-700 text-sm font-medium">${c.tanggal}</span>
+                                    <span class="font-bold text-blue-800">${formatCurrency(c.jumlah)}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }).join('');
+}
+
+// Filter hutang
+function filterHutang() {
+    const filter = document.getElementById('filter-hutang').value;
+    displayHutang(filter);
+}
+
+// Auto reminder system
+function setupAutoReminder(hutangId) {
+    const reminder = {
+        id: Date.now(),
+        hutangId: hutangId,
+        nextReminderDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
+        isActive: true
+    };
+
+    reminderList.push(reminder);
+    localStorage.setItem('reminderList', JSON.stringify(reminderList));
+}
+
+function checkAndSendReminders() {
+    const today = new Date();
+
+    reminderList.forEach(reminder => {
+        if (reminder.isActive && new Date(reminder.nextReminderDate) <= today) {
+            const hutang = hutangList.find(h => h.id == reminder.hutangId);
+
+            if (hutang && hutang.status === 'belum_lunas') {
+                const totalCicilan = cicilanList
+                    .filter(c => c.hutangId == hutang.id)
+                    .reduce((sum, c) => sum + c.jumlah, 0);
+                const sisaHutang = hutang.jumlah - totalCicilan;
+
+                const pesan = `🔔 PENGINGAT OTOMATIS\n\n${hutang.nama} memiliki hutang sebesar ${formatCurrency(sisaHutang)} yang perlu ditagih.\n\nTanggal hutang: ${hutang.tanggal}\n${hutang.keterangan ? `Keterangan: ${hutang.keterangan}` : ''}`;
+                const url = `https://wa.me/${MY_WHATSAPP}?text=${encodeURIComponent(pesan)}`;
+
+                window.open(url, '_blank');
+
+                reminder.nextReminderDate = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
+                localStorage.setItem('reminderList', JSON.stringify(reminderList));
+
+                showNotification(`Pengingat otomatis dikirim untuk hutang ${hutang.nama}`, 'info');
+            } else if (hutang && hutang.status === 'lunas') {
+                reminder.isActive = false;
+                localStorage.setItem('reminderList', JSON.stringify(reminderList));
+            }
+        }
+    });
+}
+
+function stopAutoReminder(hutangId) {
+    reminderList = reminderList.map(reminder =>
+        reminder.hutangId == hutangId ? { ...reminder, isActive: false } : reminder
+    );
+    localStorage.setItem('reminderList', JSON.stringify(reminderList));
+}
+
+// Add hutang
+function addHutang(nama, jumlah, keterangan, whatsapp, email) {
+    const hutang = {
+        id: Date.now(),
+        nama,
+        jumlah: parseInt(jumlah),
+        keterangan,
+        whatsapp,
+        email,
+        tanggal: formatDateIndonesian(new Date()),
+        status: 'belum_lunas'
+    };
+
+    hutangList.unshift(hutang);
+    localStorage.setItem('hutangList', JSON.stringify(hutangList));
+
+    setupAutoReminder(hutang.id);
+
+    displayHutang();
+    updateSummaryHutang();
+
+    showNotification('Hutang berhasil ditambahkan! Pengingat otomatis telah diaktifkan.', 'success');
+}
+
+// Edit transaction
+function editTransaction(id) {
+    const transaction = transaksi.find(t => t.id == id);
+    if (!transaction) return;
+
+    const modalContent = `
+        <div class="text-center mb-6">
+            <div class="w-12 h-12 ${transaction.type === 'pemasukan' ? 'gradient-income' : 'gradient-expense'} rounded-lg flex items-center justify-center mx-auto mb-4 shadow-lg">
+                <span class="text-lg">${transaction.type === 'pemasukan' ? '💰' : '💸'}</span>
+            </div>
+            <h2 class="text-xl font-bold ${transaction.type === 'pemasukan' ? 'text-green-600' : 'text-red-600'} mb-2">Edit ${transaction.type === 'pemasukan' ? 'Pemasukan' : 'Pengeluaran'}</h2>
+            <p class="text-gray-600 text-sm">Ubah detail transaksi Anda</p>
+        </div>
+        
+        <form id="edit-transaction-form" class="space-y-4">
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">
+                    📝 Keterangan
+                </label>
+                <input type="text" id="edit-description" class="w-full px-4 py-3 rounded-lg modern-input text-sm" value="${transaction.description}" required>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">
+                    💵 Jumlah
+                </label>
+                <input type="number" id="edit-amount" class="w-full px-4 py-3 rounded-lg modern-input text-sm font-medium" value="${transaction.amount}" required>
+            </div>
+            
+            <div class="flex gap-3 pt-4">
+                <button type="button" onclick="hideModal()" class="flex-1 px-4 py-3 rounded-lg font-semibold text-sm bg-gray-300 text-gray-700 hover:bg-gray-400 transition-all duration-300">
+                    Batal
+                </button>
+                <button type="submit" class="flex-1 px-4 py-3 rounded-lg font-semibold text-sm ${transaction.type === 'pemasukan' ? 'gradient-income' : 'gradient-expense'} text-white hover:scale-105 transition-all duration-300 shadow-lg modern-button">
+                    Simpan
+                </button>
+            </div>
+        </form>
+    `;
+
+    showModal(modalContent);
+
+    document.getElementById('edit-transaction-form').addEventListener('submit', function (e) {
+        e.preventDefault();
+        const newDescription = document.getElementById('edit-description').value.trim();
+        const newAmount = document.getElementById('edit-amount').value;
+
+        if (newDescription && newAmount && !isNaN(newAmount)) {
+            transaksi = transaksi.map(t =>
+                t.id == id ? { ...t, description: newDescription, amount: parseInt(newAmount) } : t
+            );
+            localStorage.setItem('transaksi', JSON.stringify(transaksi));
+            updateSummary();
+            displayTransactions();
+            hideModal();
+            showNotification('Transaksi berhasil diupdate!', 'success');
+        }
+    });
+}
+
+// Delete transaction
+function deleteTransaction(id) {
+    const transaction = transaksi.find(t => t.id == id);
+    if (!transaction) return;
+
+    const modalContent = `
+        <div class="text-center mb-6">
+            <div class="w-12 h-12 bg-red-500 rounded-lg flex items-center justify-center mx-auto mb-4 shadow-lg">
+                <span class="text-lg text-white">🗑️</span>
+            </div>
+            <h2 class="text-xl font-bold text-red-600 mb-2">Hapus Transaksi</h2>
+            <p class="text-gray-600 text-sm mb-4">Apakah Anda yakin ingin menghapus transaksi ini?</p>
+            
+            <div class="bg-gray-50 rounded-lg p-4 mb-4">
+                <p class="font-semibold text-gray-800">${transaction.description}</p>
+                <p class="text-lg font-bold ${transaction.type === 'pemasukan' ? 'text-green-600' : 'text-red-600'}">
+                    ${transaction.type === 'pemasukan' ? '+' : '-'} ${formatCurrency(transaction.amount)}
+                </p>
+                <p class="text-sm text-gray-500">${transaction.date}</p>
+            </div>
+        </div>
+        
+        <div class="flex gap-3">
+            <button type="button" onclick="hideModal()" class="flex-1 px-4 py-3 rounded-lg font-semibold text-sm bg-gray-300 text-gray-700 hover:bg-gray-400 transition-all duration-300">
+                Batal
+            </button>
+            <button type="button" onclick="confirmDeleteTransaction('${id}')" class="flex-1 px-4 py-3 rounded-lg font-semibold text-sm bg-red-500 text-white hover:bg-red-600 transition-all duration-300">
+                Hapus
+            </button>
+        </div>
+    `;
+
+    showModal(modalContent);
+}
+
+// Confirm delete transaction
+function confirmDeleteTransaction(id) {
+    transaksi = transaksi.filter(t => t.id != id);
+    localStorage.setItem('transaksi', JSON.stringify(transaksi));
+    updateSummary();
+    displayTransactions();
+    hideModal();
+    showNotification('Transaksi berhasil dihapus!', 'success');
+}
+
+// Edit hutang
+function editHutang(id) {
+    const hutang = hutangList.find(h => h.id == id);
+    if (!hutang) return;
+
+    const modalContent = `
+        <div class="text-center mb-6">
+            <div class="w-12 h-12 gradient-debt rounded-lg flex items-center justify-center mx-auto mb-4 shadow-lg">
+                <span class="text-lg">💳</span>
+            </div>
+            <h2 class="text-xl font-bold text-purple-600 mb-2">Edit Hutang</h2>
+            <p class="text-gray-600 text-sm">Ubah detail hutang</p>
+        </div>
+        
+        <form id="edit-hutang-form" class="space-y-4">
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">
+                    👤 Nama Penghutang
+                </label>
+                <input type="text" id="edit-nama" class="w-full px-4 py-3 rounded-lg modern-input text-sm font-medium" value="${hutang.nama}" required>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">
+                    💰 Jumlah Hutang
+                </label>
+                <input type="number" id="edit-jumlah" class="w-full px-4 py-3 rounded-lg modern-input text-sm font-medium" value="${hutang.jumlah}" required>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">
+                    📝 Keterangan
+                </label>
+                <textarea id="edit-keterangan" class="w-full px-4 py-3 rounded-lg modern-input text-sm" rows="3">${hutang.keterangan || ''}</textarea>
+            </div>
+            
+            <div class="flex gap-3 pt-4">
+                <button type="button" onclick="hideModal()" class="flex-1 px-4 py-3 rounded-lg font-semibold text-sm bg-gray-300 text-gray-700 hover:bg-gray-400 transition-all duration-300">
+                    Batal
+                </button>
+                <button type="submit" class="flex-1 px-4 py-3 rounded-lg font-semibold text-sm gradient-debt text-white hover:scale-105 transition-all duration-300 shadow-lg modern-button">
+                    Simpan
+                </button>
+            </div>
+        </form>
+    `;
+
+    showModal(modalContent);
+
+    document.getElementById('edit-hutang-form').addEventListener('submit', function (e) {
+        e.preventDefault();
+        const newNama = document.getElementById('edit-nama').value.trim();
+        const newJumlah = document.getElementById('edit-jumlah').value;
+        const newKeterangan = document.getElementById('edit-keterangan').value.trim();
+
+        if (newNama && newJumlah && !isNaN(newJumlah)) {
+            hutangList = hutangList.map(h =>
+                h.id == id ? { ...h, nama: newNama, jumlah: parseInt(newJumlah), keterangan: newKeterangan } : h
+            );
+            localStorage.setItem('hutangList', JSON.stringify(hutangList));
+            displayHutang();
+            updateSummaryHutang();
+            hideModal();
+            showNotification('Hutang berhasil diupdate!', 'success');
+        }
+    });
+}
+
+// Delete hutang
+function deleteHutang(id) {
+    const hutang = hutangList.find(h => h.id == id);
+    if (!hutang) return;
+
+    const modalContent = `
+        <div class="text-center mb-6">
+            <div class="w-12 h-12 bg-red-500 rounded-lg flex items-center justify-center mx-auto mb-4 shadow-lg">
+                <span class="text-lg text-white">🗑️</span>
+            </div>
+            <h2 class="text-xl font-bold text-red-600 mb-2">Hapus Data Hutang</h2>
+            <p class="text-gray-600 text-sm mb-4">Apakah Anda yakin ingin menghapus data hutang ini?</p>
+            
+            <div class="bg-gray-50 rounded-lg p-4 mb-4">
+                <p class="font-semibold text-gray-800">${hutang.nama}</p>
+                <p class="text-lg font-bold text-purple-600">${formatCurrency(hutang.jumlah)}</p>
+                ${hutang.keterangan ? `<p class="text-sm text-gray-500">${hutang.keterangan}</p>` : ''}
+                <p class="text-sm text-gray-500">${hutang.tanggal}</p>
+            </div>
+        </div>
+        
+        <div class="flex gap-3">
+            <button type="button" onclick="hideModal()" class="flex-1 px-4 py-3 rounded-lg font-semibold text-sm bg-gray-300 text-gray-700 hover:bg-gray-400 transition-all duration-300">
+                Batal
+            </button>
+            <button type="button" onclick="confirmDeleteHutang('${id}')" class="flex-1 px-4 py-3 rounded-lg font-semibold text-sm bg-red-500 text-white hover:bg-red-600 transition-all duration-300">
+                Hapus
+            </button>
+        </div>
+    `;
+
+    showModal(modalContent);
+}
+
+// Confirm delete hutang
+function confirmDeleteHutang(id) {
+    hutangList = hutangList.filter(h => h.id != id);
+    cicilanList = cicilanList.filter(c => c.hutangId != id);
+    localStorage.setItem('hutangList', JSON.stringify(hutangList));
+    localStorage.setItem('cicilanList', JSON.stringify(cicilanList));
+    displayHutang();
+    updateSummaryHutang();
+    hideModal();
+    showNotification('Data hutang berhasil dihapus!', 'success');
+}
+
+// Bayar cicilan
+function bayarCicilan(hutangId) {
+    const hutang = hutangList.find(h => h.id == hutangId);
+    if (!hutang) return;
+
+    const totalCicilan = cicilanList
+        .filter(c => c.hutangId == hutangId)
+        .reduce((sum, c) => sum + c.jumlah, 0);
+
+    const sisaHutang = hutang.jumlah - totalCicilan;
+
+    const modalContent = `
+        <div class="text-center mb-6">
+            <div class="w-12 h-12 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-lg flex items-center justify-center mx-auto mb-4 shadow-lg">
+                <span class="text-lg">💰</span>
+            </div>
+            <h2 class="text-xl font-bold text-purple-600 mb-2">Bayar Cicilan</h2>
+            <p class="text-gray-600 text-sm mb-4">Masukkan jumlah cicilan yang dibayar</p>
+            
+            <div class="bg-gray-50 rounded-lg p-4 mb-4">
+                <p class="font-semibold text-gray-800">${hutang.nama}</p>
+                <p class="text-sm text-gray-600">Hutang Awal: ${formatCurrency(hutang.jumlah)}</p>
+                <p class="text-sm text-blue-600">Sudah Dibayar: ${formatCurrency(totalCicilan)}</p>
+                <p class="text-lg font-bold text-red-600">Sisa Hutang: ${formatCurrency(sisaHutang)}</p>
+            </div>
+        </div>
+        
+        <form id="cicilan-form" class="space-y-4">
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">
+                    💰 Jumlah Cicilan
+                </label>
+                <input type="number" id="jumlah-cicilan" class="w-full px-4 py-3 rounded-lg modern-input text-sm font-medium" placeholder="0" max="${sisaHutang}" required>
+            </div>
+            
+            <div class="flex gap-3 pt-4">
+                <button type="button" onclick="hideModal()" class="flex-1 px-4 py-3 rounded-lg font-semibold text-sm bg-gray-300 text-gray-700 hover:bg-gray-400 transition-all duration-300">
+                    Batal
+                </button>
+                <button type="submit" class="flex-1 px-4 py-3 rounded-lg font-semibold text-sm bg-gradient-to-r from-indigo-500 to-purple-500 text-white hover:scale-105 transition-all duration-300 shadow-lg modern-button">
+                    Bayar Cicilan
+                </button>
+            </div>
+        </form>
+    `;
+
+    showModal(modalContent);
+
+    document.getElementById('cicilan-form').addEventListener('submit', function (e) {
+        e.preventDefault();
+        const jumlahCicilan = parseInt(document.getElementById('jumlah-cicilan').value);
+
+        if (jumlahCicilan > 0 && jumlahCicilan <= sisaHutang) {
+            const cicilan = {
+                id: Date.now(),
+                hutangId: hutangId,
+                jumlah: jumlahCicilan,
+                tanggal: formatDateIndonesian(new Date())
+            };
+
+            cicilanList.push(cicilan);
+            localStorage.setItem('cicilanList', JSON.stringify(cicilanList));
+
+            if (jumlahCicilan === sisaHutang) {
+                hutangList = hutangList.map(h =>
+                    h.id == hutangId ? { ...h, status: 'lunas' } : h
+                );
+                localStorage.setItem('hutangList', JSON.stringify(hutangList));
+                stopAutoReminder(hutangId);
+                showNotification('Cicilan berhasil dibayar! Hutang sudah lunas. Pengingat otomatis dihentikan.', 'success');
+            } else {
+                showNotification('Cicilan berhasil dibayar!', 'success');
+            }
+
+            displayHutang();
+            updateSummaryHutang();
+            hideModal();
+        } else {
+            alert('Jumlah cicilan tidak valid!');
+        }
+    });
+}
+
+// Kirim pesan WA
+function kirimPesan(nomor, nama, jumlah) {
+    const pesan = `Halo ${nama}, ini pengingat bahwa Anda memiliki hutang sebesar ${formatCurrency(jumlah)}. Mohon untuk segera dilunasi. Terima kasih!`;
+    const url = `https://wa.me/${nomor.replace(/^0/, '62')}?text=${encodeURIComponent(pesan)}`;
+    window.open(url, '_blank');
+    showNotification('Pengingat sudah dikirimkan via WhatsApp!', 'success');
+}
+
+// Kirim email
+function kirimEmail(email, nama, jumlah) {
+    const subject = 'Pengingat Hutang';
+    const body = `Halo ${nama},\n\nIni pengingat bahwa Anda memiliki hutang sebesar ${formatCurrency(jumlah)}.\nMohon untuk segera dilunasi.\n\nTerima kasih!`;
+    const url = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.open(url);
+    showNotification('Pengingat sudah dikirimkan via Email!', 'success');
+}
+
+// Lunaskan hutang
+function lunaskanHutang(id) {
+    const hutang = hutangList.find(h => h.id == id);
+    if (!hutang) return;
+
+    const modalContent = `
+        <div class="text-center mb-6">
+            <div class="w-12 h-12 gradient-income rounded-lg flex items-center justify-center mx-auto mb-4 shadow-lg">
+                <span class="text-lg">✅</span>
+            </div>
+            <h2 class="text-xl font-bold text-green-600 mb-2">Tandai Sebagai Hutang Yang Sudah Lunas</h2>
+            <p class="text-gray-600 text-sm mb-4">Apakah Anda yakin hutang ini sudah lunas?</p>
+            
+            <div class="bg-gray-50 rounded-lg p-4 mb-4">
+                <p class="font-semibold text-gray-800">${hutang.nama}</p>
+                <p class="text-lg font-bold text-purple-600">${formatCurrency(hutang.jumlah)}</p>
+                ${hutang.keterangan ? `<p class="text-sm text-gray-500">${hutang.keterangan}</p>` : ''}
+                <p class="text-sm text-gray-500">${hutang.tanggal}</p>
+            </div>
+        </div>
+        
+        <div class="flex gap-3">
+            <button type="button" onclick="hideModal()" class="flex-1 px-4 py-3 rounded-lg font-semibold text-sm bg-gray-300 text-gray-700 hover:bg-gray-400 transition-all duration-300">
+                Cancel
+            </button>
+            <button type="button" onclick="confirmLunaskanHutang('${id}')" class="flex-1 px-4 py-3 rounded-lg font-semibold text-sm gradient-income text-white hover:scale-105 transition-all duration-300 shadow-lg modern-button">
+                Konfirmasi
+            </button>
+        </div>
+    `;
+
+    showModal(modalContent);
+}
+
+// Confirm lunaskan hutang
+function confirmLunaskanHutang(id) {
+    hutangList = hutangList.map(h =>
+        h.id == id ? { ...h, status: 'lunas' } : h
+    );
+    localStorage.setItem('hutangList', JSON.stringify(hutangList));
+    stopAutoReminder(id);
+    displayHutang();
+    updateSummaryHutang();
+    hideModal();
+    showNotification('Hutang sudah lunas! Pengingat otomatis dihentikan.', 'success');
+}
+
+// Update form appearance based on transaction type
+function updateFormAppearance(type) {
+    const formIcon = document.getElementById('form-icon');
+    const formTitle = document.getElementById('form-title');
+    const submitBtn = document.getElementById('submit-btn');
+
+    if (type === 'pemasukan') {
+        formIcon.className = 'w-12 h-12 gradient-income rounded-lg flex items-center justify-center mx-auto mb-4 shadow-lg';
+        formIcon.innerHTML = '<span class="text-lg">💰</span>';
+        formTitle.textContent = 'Tambah Pemasukan';
+        formTitle.className = 'text-xl font-bold text-green-600 mb-2';
+        submitBtn.className = 'w-full px-8 py-3 rounded-lg font-bold text-sm gradient-income text-white hover:scale-105 transition-all duration-300 shadow-lg modern-button';
+        submitBtn.innerHTML = 'Tambah Pemasukan';
+    } else if (type === 'pengeluaran') {
+        formIcon.className = 'w-12 h-12 gradient-expense rounded-lg flex items-center justify-center mx-auto mb-4 shadow-lg';
+        formIcon.innerHTML = '<span class="text-lg">💸</span>';
+        formTitle.textContent = 'Tambah Pengeluaran';
+        formTitle.className = 'text-xl font-bold text-red-600 mb-2';
+        submitBtn.className = 'w-full px-8 py-3 rounded-lg font-bold text-sm gradient-expense text-white hover:scale-105 transition-all duration-300 shadow-lg modern-button';
+        submitBtn.innerHTML = 'Tambah Pengeluaran';
+    } else {
+        formIcon.className = 'w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center mx-auto mb-4 shadow-lg';
+        formIcon.innerHTML = '<span class="text-lg">📝</span>';
+        formTitle.textContent = 'Tambah Transaksi Baru';
+        formTitle.className = 'text-xl font-bold text-blue-600 mb-2';
+        submitBtn.className = 'w-full px-8 py-3 rounded-lg font-bold text-sm bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:scale-105 transition-all duration-300 shadow-lg modern-button';
+        submitBtn.innerHTML = 'Tambah Transaksi';
+    }
+}
+
+// Event listeners
+document.getElementById('jenis-transaksi').addEventListener('change', function (e) {
+    updateFormAppearance(e.target.value);
+});
+
+document.getElementById('form-transaksi').addEventListener('submit', function (e) {
+    e.preventDefault();
+    const type = document.getElementById('jenis-transaksi').value;
+    const description = document.getElementById('keterangan-transaksi').value;
+    const amount = document.getElementById('jumlah-transaksi').value;
+
+    if (!type) {
+        alert('Silakan pilih jenis transaksi terlebih dahulu!');
+        return;
+    }
+
+    addTransaction(type, description, amount);
+    this.reset();
+    updateFormAppearance('');
+});
+
+document.getElementById('form-hutang').addEventListener('submit', function (e) {
+    e.preventDefault();
+    const nama = document.getElementById('nama-penghutang').value;
+    const jumlah = document.getElementById('jumlah-hutang').value;
+    const keterangan = document.getElementById('keterangan-hutang').value;
+    const whatsapp = document.getElementById('whatsapp-penghutang').value;
+    const email = document.getElementById('email-penghutang').value;
+
+    addHutang(nama, jumlah, keterangan, whatsapp, email);
+    this.reset();
+});
+
+// Initialize
+updateSummary();
+displayTransactions();
+displayHutang();
+updateSummaryHutang();
+
+// Check for reminders on page load
+checkAndSendReminders();
+
+// Set interval to check reminders every hour
+setInterval(checkAndSendReminders, 60 * 60 * 1000);
