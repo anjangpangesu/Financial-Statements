@@ -1,8 +1,10 @@
-// Data storage
-let transaksi = JSON.parse(localStorage.getItem('transaksi')) || [];
-let hutangList = JSON.parse(localStorage.getItem('hutangList')) || [];
-let cicilanList = JSON.parse(localStorage.getItem('cicilanList')) || [];
-let reminderList = JSON.parse(localStorage.getItem('reminderList')) || [];
+// Anda perlu mengganti URL ini dengan URL Google Apps Script yang telah Anda publikasikan
+const SPREADSHEET_URL = 'https://script.google.com/macros/s/AKfycbwOsPphtGQTK-cHiw_MBKNr3HJzysUax2vk2lHexWzwpSe4p2TGt2-uspNVNcUFomeadg/exec';
+
+// Data storage (akan diisi dari Google Sheets)
+let transaksi = [];
+let hutangList = [];
+let cicilanList = [];
 
 // Nomor WhatsApp untuk pengingat otomatis
 const MY_WHATSAPP = '6281213699618';
@@ -208,7 +210,7 @@ function addTransaction(type, description, amount) {
     };
 
     transaksi.unshift(transaction);
-    localStorage.setItem('transaksi', JSON.stringify(transaksi));
+    saveData('Keuangan');
 
     updateSummary();
     displayTransactions();
@@ -355,56 +357,6 @@ function filterHutang() {
     displayHutang(filter);
 }
 
-// Auto reminder system
-function setupAutoReminder(hutangId) {
-    const reminder = {
-        id: Date.now(),
-        hutangId: hutangId,
-        nextReminderDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
-        isActive: true
-    };
-
-    reminderList.push(reminder);
-    localStorage.setItem('reminderList', JSON.stringify(reminderList));
-}
-
-function checkAndSendReminders() {
-    const today = new Date();
-
-    reminderList.forEach(reminder => {
-        if (reminder.isActive && new Date(reminder.nextReminderDate) <= today) {
-            const hutang = hutangList.find(h => h.id == reminder.hutangId);
-
-            if (hutang && hutang.status === 'belum_lunas') {
-                const totalCicilan = cicilanList
-                    .filter(c => c.hutangId == hutang.id)
-                    .reduce((sum, c) => sum + c.jumlah, 0);
-                const sisaHutang = hutang.jumlah - totalCicilan;
-
-                const pesan = `🔔 PENGINGAT OTOMATIS\n\n${hutang.nama} memiliki hutang sebesar ${formatCurrency(sisaHutang)} yang perlu ditagih.\n\nTanggal hutang: ${hutang.tanggal}\n${hutang.keterangan ? `Keterangan: ${hutang.keterangan}` : ''}`;
-                const url = `https://wa.me/${MY_WHATSAPP}?text=${encodeURIComponent(pesan)}`;
-
-                window.open(url, '_blank');
-
-                reminder.nextReminderDate = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
-                localStorage.setItem('reminderList', JSON.stringify(reminderList));
-
-                showNotification(`Pengingat otomatis dikirim untuk hutang ${hutang.nama}`, 'info');
-            } else if (hutang && hutang.status === 'lunas') {
-                reminder.isActive = false;
-                localStorage.setItem('reminderList', JSON.stringify(reminderList));
-            }
-        }
-    });
-}
-
-function stopAutoReminder(hutangId) {
-    reminderList = reminderList.map(reminder =>
-        reminder.hutangId == hutangId ? { ...reminder, isActive: false } : reminder
-    );
-    localStorage.setItem('reminderList', JSON.stringify(reminderList));
-}
-
 // Add hutang
 function addHutang(nama, jumlah, keterangan, whatsapp, email) {
     const hutang = {
@@ -419,14 +371,12 @@ function addHutang(nama, jumlah, keterangan, whatsapp, email) {
     };
 
     hutangList.unshift(hutang);
-    localStorage.setItem('hutangList', JSON.stringify(hutangList));
-
-    setupAutoReminder(hutang.id);
+    saveData('Hutang');
 
     displayHutang();
     updateSummaryHutang();
 
-    showNotification('Hutang berhasil ditambahkan! Pengingat otomatis telah diaktifkan.', 'success');
+    showNotification('Hutang berhasil ditambahkan!', 'success');
 }
 
 // Edit transaction
@@ -479,7 +429,7 @@ function editTransaction(id) {
             transaksi = transaksi.map(t =>
                 t.id == id ? { ...t, description: newDescription, amount: parseInt(newAmount) } : t
             );
-            localStorage.setItem('transaksi', JSON.stringify(transaksi));
+            saveData('Keuangan');
             updateSummary();
             displayTransactions();
             hideModal();
@@ -526,7 +476,7 @@ function deleteTransaction(id) {
 // Confirm delete transaction
 function confirmDeleteTransaction(id) {
     transaksi = transaksi.filter(t => t.id != id);
-    localStorage.setItem('transaksi', JSON.stringify(transaksi));
+    saveData('Keuangan');
     updateSummary();
     displayTransactions();
     hideModal();
@@ -590,7 +540,7 @@ function editHutang(id) {
             hutangList = hutangList.map(h =>
                 h.id == id ? { ...h, nama: newNama, jumlah: parseInt(newJumlah), keterangan: newKeterangan } : h
             );
-            localStorage.setItem('hutangList', JSON.stringify(hutangList));
+            saveData('Hutang');
             displayHutang();
             updateSummaryHutang();
             hideModal();
@@ -637,8 +587,7 @@ function deleteHutang(id) {
 function confirmDeleteHutang(id) {
     hutangList = hutangList.filter(h => h.id != id);
     cicilanList = cicilanList.filter(c => c.hutangId != id);
-    localStorage.setItem('hutangList', JSON.stringify(hutangList));
-    localStorage.setItem('cicilanList', JSON.stringify(cicilanList));
+    saveData('Hutang');
     displayHutang();
     updateSummaryHutang();
     hideModal();
@@ -706,22 +655,17 @@ function bayarCicilan(hutangId) {
             };
 
             cicilanList.push(cicilan);
-            localStorage.setItem('cicilanList', JSON.stringify(cicilanList));
 
             if (jumlahCicilan === sisaHutang) {
                 hutangList = hutangList.map(h =>
                     h.id == hutangId ? { ...h, status: 'lunas' } : h
                 );
-                localStorage.setItem('hutangList', JSON.stringify(hutangList));
-                stopAutoReminder(hutangId);
-                showNotification('Cicilan berhasil dibayar! Hutang sudah lunas. Pengingat otomatis dihentikan.', 'success');
-            } else {
-                showNotification('Cicilan berhasil dibayar!', 'success');
             }
-
+            saveData('Hutang');
             displayHutang();
             updateSummaryHutang();
             hideModal();
+            showNotification('Cicilan berhasil dibayar!', 'success');
         } else {
             alert('Jumlah cicilan tidak valid!');
         }
@@ -784,8 +728,7 @@ function confirmLunaskanHutang(id) {
     hutangList = hutangList.map(h =>
         h.id == id ? { ...h, status: 'lunas' } : h
     );
-    localStorage.setItem('hutangList', JSON.stringify(hutangList));
-    stopAutoReminder(id);
+    saveData('Hutang');
     displayHutang();
     updateSummaryHutang();
     hideModal();
@@ -855,14 +798,61 @@ document.getElementById('form-hutang').addEventListener('submit', function (e) {
     this.reset();
 });
 
+// New functions for Google Apps Script integration
+async function loadData() {
+    try {
+        const response = await fetch(SPREADSHEET_URL + '?action=getData');
+        const data = await response.json();
+
+        transaksi = data.keuangan || [];
+        hutangList = data.hutang || [];
+        cicilanList = data.cicilan || [];
+
+        displayTransactions();
+        updateSummary();
+        displayHutang();
+        updateSummaryHutang();
+
+        console.log('Data loaded successfully from Google Sheets.');
+    } catch (error) {
+        console.error('Error loading data from Google Sheets:', error);
+        showNotification('Gagal memuat data dari Google Sheets. Pastikan URL skrip sudah benar.', 'error');
+    }
+}
+
+async function saveData(sheetName) {
+    try {
+        const dataToSend = {
+            action: 'saveData',
+            sheet: sheetName,
+            data: {
+                keuangan: transaksi,
+                hutang: hutangList,
+                cicilan: cicilanList,
+            }
+        };
+
+        const response = await fetch(SPREADSHEET_URL, {
+            method: 'POST',
+            body: JSON.stringify(dataToSend),
+            headers: {
+                'Content-Type': 'text/plain;charset=utf-8',
+            }
+        });
+
+        const result = await response.json();
+        if (result.status === 'success') {
+            console.log('Data saved successfully to Google Sheets.');
+        } else {
+            console.error('Error saving data:', result.message);
+            showNotification('Gagal menyimpan data ke Google Sheets.', 'error');
+        }
+    } catch (error) {
+        console.error('Error saving data to Google Sheets:', error);
+        showNotification('Gagal menyimpan data ke Google Sheets.', 'error');
+    }
+}
+
+
 // Initialize
-updateSummary();
-displayTransactions();
-displayHutang();
-updateSummaryHutang();
-
-// Check for reminders on page load
-checkAndSendReminders();
-
-// Set interval to check reminders every hour
-setInterval(checkAndSendReminders, 60 * 60 * 1000);
+loadData();
