@@ -4,10 +4,6 @@ const SPREADSHEET_URL = 'https://script.google.com/macros/s/AKfycbwOsPphtGQTK-cH
 // Data storage (akan diisi dari Google Sheets)
 let transaksi = [];
 let hutangList = [];
-let cicilanList = [];
-
-// Nomor WhatsApp untuk pengingat otomatis
-const MY_WHATSAPP = '6281213699618';
 
 // Tab functionality
 function showTab(tabName) {
@@ -123,10 +119,7 @@ function updateSummaryHutang() {
 
     const totalUangDiutangin = hutangList.reduce((sum, h) => {
         if (h.status === 'belum_lunas') {
-            const totalCicilan = cicilanList
-                .filter(c => c.hutangId == h.id)
-                .reduce((cicilanSum, c) => cicilanSum + c.jumlah, 0);
-            return sum + (h.jumlah - totalCicilan);
+            return sum + (h.jumlah - h.cicilan);
         }
         return sum;
     }, 0);
@@ -200,17 +193,17 @@ function filterTransactions() {
 }
 
 // Add transaction
-function addTransaction(type, description, amount) {
+async function addTransaction(type, description, amount) {
     const transaction = {
         id: Date.now(),
+        date: formatDateIndonesian(new Date()),
         type,
         description,
-        amount: parseInt(amount),
-        date: formatDateIndonesian(new Date())
+        amount: parseInt(amount)
     };
 
     transaksi.unshift(transaction);
-    saveData('Keuangan');
+    await saveData('Keuangan');
 
     updateSummary();
     displayTransactions();
@@ -242,12 +235,7 @@ function displayHutang(filter = 'semua') {
     }
 
     container.innerHTML = filteredHutang.map(h => {
-        const totalCicilan = cicilanList
-            .filter(c => c.hutangId == h.id)
-            .reduce((sum, c) => sum + c.jumlah, 0);
-
-        const sisaHutang = h.jumlah - totalCicilan;
-        const cicilanHutang = cicilanList.filter(c => c.hutangId == h.id);
+        const sisaHutang = h.jumlah - h.cicilan;
 
         return `
             <div class="glass-card border-2 ${h.status === 'lunas' ? 'border-green-200 bg-gradient-to-r from-green-50/50 to-white' : 'border-gray-100'} rounded-lg p-6 relative overflow-hidden">
@@ -278,7 +266,7 @@ function displayHutang(filter = 'semua') {
                                 <div class="pl-3">
                                     ${h.status === 'lunas' ? `
                                         <p class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1">Sudah Dibayar</p>
-                                        <p class="text-lg font-bold text-green-600">${formatCurrency(totalCicilan > 0 ? totalCicilan : h.jumlah)}</p>
+                                        <p class="text-lg font-bold text-green-600">${formatCurrency(h.jumlah)}</p>
                                     ` : `
                                         <p class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1">Sisa Hutang</p>
                                         <p class="text-lg font-bold text-red-600">${formatCurrency(sisaHutang)}</p>
@@ -330,22 +318,6 @@ function displayHutang(filter = 'semua') {
                         </button>
                     </div>
                 </div>
-                
-                ${cicilanHutang.length > 0 ? `
-                    <div class="bg-blue-50 rounded-lg p-4 relative z-10">
-                        <h4 class="font-semibold text-blue-800 mb-3 flex items-center">
-                            <span class="mr-2">📋</span> Riwayat Cicilan
-                        </h4>
-                        <div class="space-y-2 max-h-32 overflow-y-auto">
-                            ${cicilanHutang.map(c => `
-                                <div class="flex justify-between items-center bg-white rounded-lg p-2">
-                                    <span class="text-blue-700 text-sm font-medium">${c.tanggal}</span>
-                                    <span class="font-bold text-blue-800">${formatCurrency(c.jumlah)}</span>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                ` : ''}
             </div>
         `;
     }).join('');
@@ -358,7 +330,7 @@ function filterHutang() {
 }
 
 // Add hutang
-function addHutang(nama, jumlah, keterangan, whatsapp, email) {
+async function addHutang(nama, jumlah, keterangan, whatsapp, email) {
     const hutang = {
         id: Date.now(),
         nama,
@@ -367,11 +339,13 @@ function addHutang(nama, jumlah, keterangan, whatsapp, email) {
         whatsapp,
         email,
         tanggal: formatDateIndonesian(new Date()),
+        cicilan: 0,
+        sisaHutang: parseInt(jumlah),
         status: 'belum_lunas'
     };
 
     hutangList.unshift(hutang);
-    saveData('Hutang');
+    await saveData('Hutang');
 
     displayHutang();
     updateSummaryHutang();
@@ -420,7 +394,7 @@ function editTransaction(id) {
 
     showModal(modalContent);
 
-    document.getElementById('edit-transaction-form').addEventListener('submit', function (e) {
+    document.getElementById('edit-transaction-form').addEventListener('submit', async function (e) {
         e.preventDefault();
         const newDescription = document.getElementById('edit-description').value.trim();
         const newAmount = document.getElementById('edit-amount').value;
@@ -429,7 +403,7 @@ function editTransaction(id) {
             transaksi = transaksi.map(t =>
                 t.id == id ? { ...t, description: newDescription, amount: parseInt(newAmount) } : t
             );
-            saveData('Keuangan');
+            await saveData('Keuangan');
             updateSummary();
             displayTransactions();
             hideModal();
@@ -474,9 +448,9 @@ function deleteTransaction(id) {
 }
 
 // Confirm delete transaction
-function confirmDeleteTransaction(id) {
+async function confirmDeleteTransaction(id) {
     transaksi = transaksi.filter(t => t.id != id);
-    saveData('Keuangan');
+    await saveData('Keuangan');
     updateSummary();
     displayTransactions();
     hideModal();
@@ -530,7 +504,7 @@ function editHutang(id) {
 
     showModal(modalContent);
 
-    document.getElementById('edit-hutang-form').addEventListener('submit', function (e) {
+    document.getElementById('edit-hutang-form').addEventListener('submit', async function (e) {
         e.preventDefault();
         const newNama = document.getElementById('edit-nama').value.trim();
         const newJumlah = document.getElementById('edit-jumlah').value;
@@ -540,7 +514,7 @@ function editHutang(id) {
             hutangList = hutangList.map(h =>
                 h.id == id ? { ...h, nama: newNama, jumlah: parseInt(newJumlah), keterangan: newKeterangan } : h
             );
-            saveData('Hutang');
+            await saveData('Hutang');
             displayHutang();
             updateSummaryHutang();
             hideModal();
@@ -584,10 +558,9 @@ function deleteHutang(id) {
 }
 
 // Confirm delete hutang
-function confirmDeleteHutang(id) {
+async function confirmDeleteHutang(id) {
     hutangList = hutangList.filter(h => h.id != id);
-    cicilanList = cicilanList.filter(c => c.hutangId != id);
-    saveData('Hutang');
+    await saveData('Hutang');
     displayHutang();
     updateSummaryHutang();
     hideModal();
@@ -599,11 +572,7 @@ function bayarCicilan(hutangId) {
     const hutang = hutangList.find(h => h.id == hutangId);
     if (!hutang) return;
 
-    const totalCicilan = cicilanList
-        .filter(c => c.hutangId == hutangId)
-        .reduce((sum, c) => sum + c.jumlah, 0);
-
-    const sisaHutang = hutang.jumlah - totalCicilan;
+    const sisaHutang = hutang.jumlah - hutang.cicilan;
 
     const modalContent = `
         <div class="text-center mb-6">
@@ -616,7 +585,7 @@ function bayarCicilan(hutangId) {
             <div class="bg-gray-50 rounded-lg p-4 mb-4">
                 <p class="font-semibold text-gray-800">${hutang.nama}</p>
                 <p class="text-sm text-gray-600">Hutang Awal: ${formatCurrency(hutang.jumlah)}</p>
-                <p class="text-sm text-blue-600">Sudah Dibayar: ${formatCurrency(totalCicilan)}</p>
+                <p class="text-sm text-blue-600">Sudah Dibayar: ${formatCurrency(hutang.cicilan)}</p>
                 <p class="text-lg font-bold text-red-600">Sisa Hutang: ${formatCurrency(sisaHutang)}</p>
             </div>
         </div>
@@ -642,26 +611,22 @@ function bayarCicilan(hutangId) {
 
     showModal(modalContent);
 
-    document.getElementById('cicilan-form').addEventListener('submit', function (e) {
+    document.getElementById('cicilan-form').addEventListener('submit', async function (e) {
         e.preventDefault();
         const jumlahCicilan = parseInt(document.getElementById('jumlah-cicilan').value);
 
         if (jumlahCicilan > 0 && jumlahCicilan <= sisaHutang) {
-            const cicilan = {
-                id: Date.now(),
-                hutangId: hutangId,
-                jumlah: jumlahCicilan,
-                tanggal: formatDateIndonesian(new Date())
-            };
+            hutangList = hutangList.map(h => {
+                if (h.id == hutangId) {
+                    h.cicilan += jumlahCicilan;
+                    if (h.cicilan === h.jumlah) {
+                        h.status = 'lunas';
+                    }
+                }
+                return h;
+            });
 
-            cicilanList.push(cicilan);
-
-            if (jumlahCicilan === sisaHutang) {
-                hutangList = hutangList.map(h =>
-                    h.id == hutangId ? { ...h, status: 'lunas' } : h
-                );
-            }
-            saveData('Hutang');
+            await saveData('Hutang');
             displayHutang();
             updateSummaryHutang();
             hideModal();
@@ -712,7 +677,7 @@ function lunaskanHutang(id) {
         
         <div class="flex gap-3">
             <button type="button" onclick="hideModal()" class="flex-1 px-4 py-3 rounded-lg font-semibold text-sm bg-gray-300 text-gray-700 hover:bg-gray-400 transition-all duration-300">
-                Cancel
+                Batal
             </button>
             <button type="button" onclick="confirmLunaskanHutang('${id}')" class="flex-1 px-4 py-3 rounded-lg font-semibold text-sm gradient-income text-white hover:scale-105 transition-all duration-300 shadow-lg modern-button">
                 Konfirmasi
@@ -724,15 +689,20 @@ function lunaskanHutang(id) {
 }
 
 // Confirm lunaskan hutang
-function confirmLunaskanHutang(id) {
-    hutangList = hutangList.map(h =>
-        h.id == id ? { ...h, status: 'lunas' } : h
-    );
-    saveData('Hutang');
+async function confirmLunaskanHutang(id) {
+    hutangList = hutangList.map(h => {
+        if (h.id == id) {
+            h.status = 'lunas';
+            h.cicilan = h.jumlah;
+        }
+        return h;
+    });
+
+    await saveData('Hutang');
     displayHutang();
     updateSummaryHutang();
     hideModal();
-    showNotification('Hutang sudah lunas! Pengingat otomatis dihentikan.', 'success');
+    showNotification('Hutang sudah lunas!', 'success');
 }
 
 // Update form appearance based on transaction type
@@ -804,9 +774,14 @@ async function loadData() {
         const response = await fetch(SPREADSHEET_URL + '?action=getData');
         const data = await response.json();
 
-        transaksi = data.keuangan || [];
-        hutangList = data.hutang || [];
-        cicilanList = data.cicilan || [];
+        transaksi = data.keuangan.map(item => ({ ...item, id: parseInt(item.id), amount: parseInt(item.amount) }));
+        hutangList = data.hutang.map(item => ({
+            ...item,
+            id: parseInt(item.id),
+            jumlah: parseInt(item.jumlah),
+            cicilan: parseInt(item.cicilan || 0),
+            sisaHutang: parseInt(item.sisaHutang || 0)
+        }));
 
         displayTransactions();
         updateSummary();
@@ -827,8 +802,7 @@ async function saveData(sheetName) {
             sheet: sheetName,
             data: {
                 keuangan: transaksi,
-                hutang: hutangList,
-                cicilan: cicilanList,
+                hutang: hutangList
             }
         };
 
