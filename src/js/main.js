@@ -994,12 +994,23 @@ async function loadData() {
 
 async function saveData(sheetName) {
     try {
+        // Buat salinan data dengan format tanggal yang baru
+        const formattedTransaksi = transaksi.map(t => ({
+            ...t,
+            date: formatDateIndonesian(t.date)
+        }));
+
+        const formattedHutangList = hutangList.map(h => ({
+            ...h,
+            tanggal: formatDateIndonesian(h.tanggal)
+        }));
+
         const dataToSend = {
             action: 'saveData',
             sheet: sheetName,
             data: {
-                keuangan: transaksi,
-                hutang: hutangList
+                keuangan: formattedTransaksi,
+                hutang: formattedHutangList
             }
         };
 
