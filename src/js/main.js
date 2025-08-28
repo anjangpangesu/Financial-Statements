@@ -47,7 +47,16 @@ function formatCurrency(amount) {
 }
 
 // Format date to Indonesian format
-function formatDateIndonesian(date) {
+function formatDateIndonesian(dateString) {
+    if (!dateString) return '';
+
+    // Check if the dateString is a valid date object or string
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+        // If it's not a valid date object, assume it's already in the desired string format
+        return dateString;
+    }
+
     const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
     const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
         'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
@@ -140,12 +149,12 @@ function displayTransactions(filter = 'semua') {
 
     if (filteredTransaksi.length === 0) {
         container.innerHTML = `
-            <div class="text-center py-12">
-                <div class="w-20 h-20 bg-gradient-to-br from-blue-100 to-cyan-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <span class="text-3xl">📝</span>
+            <div class="text-center py-6 md:py-12">
+                <div class="w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-blue-100 to-cyan-100 rounded-full flex items-center justify-center mx-auto mb-2 md:mb-4">
+                    <span class="text-xl md:text-3xl">📝</span>
                 </div>
-                <h3 class="text-lg font-bold text-gray-600 mb-2">Belum Ada Transaksi</h3>
-                <p class="text-gray-500 text-sm">Mulai tambahkan pemasukan atau pengeluaran Anda untuk melihat riwayat di sini</p>
+                <h3 class="text-base md:text-lg font-bold text-gray-600 mb-1 md:mb-2">Belum Ada Transaksi</h3>
+                <p class="text-gray-500 text-xs md:text-sm">Mulai tambahkan pemasukan atau pengeluaran Anda untuk melihat riwayat di sini</p>
             </div>
         `;
         return;
@@ -154,7 +163,35 @@ function displayTransactions(filter = 'semua') {
     container.innerHTML = filteredTransaksi.map(t => `
         <div class="glass-card border-2 border-gray-100 rounded-lg p-4 relative overflow-hidden">
             <div class="absolute top-0 right-0 w-16 h-16 ${t.type === 'pemasukan' ? 'gradient-income' : 'gradient-expense'} opacity-10 rounded-full -mr-8 -mt-8"></div>
-            <div class="flex justify-between items-start relative z-10">
+            
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center relative z-10 md:hidden">
+                <div class="flex items-start flex-1 mb-2">
+                    <div class="w-12 h-12 ${t.type === 'pemasukan' ? 'gradient-income' : 'gradient-expense'} rounded-lg flex items-center justify-center mr-3 shadow-lg">
+                        <span class="text-base">${t.type === 'pemasukan' ? '💰' : '💸'}</span>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-base text-gray-800 capitalize">
+                            ${t.description}
+                        </h3>
+                        <p class="font-semibold text-sm ${t.type === 'pemasukan' ? 'text-green-600' : 'text-red-600'}">
+                            ${t.type === 'pemasukan' ? '+' : '-'} ${formatCurrency(t.amount)}
+                        </p>
+                        <p class="text-gray-500 text-xs font-medium flex items-center mt-1">
+                            <span class="mr-1">📅</span> ${formatDateIndonesian(t.date)}
+                        </p>
+                    </div>
+                </div>
+                <div class="flex gap-2 w-full">
+                    <button onclick="editTransaction('${t.id}')" class="flex-1 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs font-semibold transition-all duration-300">
+                        Edit
+                    </button>
+                    <button onclick="deleteTransaction('${t.id}')" class="flex-1 bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs font-semibold transition-all duration-300">
+                        Hapus
+                    </button>
+                </div>
+            </div>
+
+            <div class="hidden md:flex justify-between items-start relative z-10">
                 <div class="flex items-start flex-1">
                     <div class="w-14 h-14 ${t.type === 'pemasukan' ? 'gradient-income' : 'gradient-expense'} rounded-lg flex items-center justify-center mr-4 shadow-lg">
                         <span class="text-lg">${t.type === 'pemasukan' ? '💰' : '💸'}</span>
@@ -164,7 +201,7 @@ function displayTransactions(filter = 'semua') {
                             ${t.description}
                         </h3>
                         <p class="text-gray-500 text-sm font-medium flex items-center">
-                            <span class="mr-1">📅</span> ${t.date}
+                            <span class="mr-1">📅</span> ${formatDateIndonesian(t.date)}
                         </p>
                     </div>
                 </div>
@@ -196,7 +233,7 @@ function filterTransactions() {
 async function addTransaction(type, description, amount) {
     const transaction = {
         id: Date.now(),
-        date: formatDateIndonesian(new Date()),
+        date: new Date().toISOString(), // Simpan dalam format ISO untuk konsistensi
         type,
         description,
         amount: parseInt(amount)
@@ -223,12 +260,12 @@ function displayHutang(filter = 'semua') {
 
     if (filteredHutang.length === 0) {
         container.innerHTML = `
-            <div class="text-center py-12">
-                <div class="w-20 h-20 bg-gradient-to-br from-purple-100 to-purple-200 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <span class="text-3xl">📝</span>
+            <div class="text-center py-6 md:py-12">
+                <div class="w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-purple-100 to-purple-200 rounded-full flex items-center justify-center mx-auto mb-2 md:mb-4">
+                    <span class="text-xl md:text-3xl">📝</span>
                 </div>
-                <h3 class="text-lg font-bold text-gray-600 mb-2">Belum Ada Data Hutang</h3>
-                <p class="text-gray-500 text-sm">Tambahkan data hutang untuk mulai mengelola piutang Anda dengan lebih baik</p>
+                <h3 class="text-base md:text-lg font-bold text-gray-600 mb-1 md:mb-2">Belum Ada Data Hutang</h3>
+                <p class="text-gray-500 text-xs md:text-sm">Tambahkan data hutang untuk mulai mengelola piutang Anda dengan lebih baik</p>
             </div>
         `;
         return;
@@ -238,90 +275,241 @@ function displayHutang(filter = 'semua') {
         const sisaHutang = h.jumlah - h.cicilan;
 
         return `
-            <div class="glass-card border-2 ${h.status === 'lunas' ? 'border-green-200 bg-gradient-to-r from-green-50/50 to-white' : 'border-gray-100'} rounded-lg p-6 relative overflow-hidden">
+            <div class="glass-card border-2 ${h.status === 'lunas' ? 'border-green-200 bg-gradient-to-r from-green-50/50 to-white' : 'border-gray-100'} rounded-lg p-4 relative overflow-hidden">
                 <div class="absolute top-0 right-0 w-16 h-16 ${h.status === 'lunas' ? 'gradient-income' : 'gradient-debt'} opacity-10 rounded-full -mr-8 -mt-8"></div>
                 
-                <div class="flex items-start justify-between mb-4 relative z-10">
+                <div class="flex items-start justify-between mb-2 relative z-10">
                     <div class="flex items-start flex-1">
-                        <div class="w-14 h-14 ${h.status === 'lunas' ? 'gradient-income' : 'gradient-debt'} rounded-lg flex items-center justify-center mr-4 shadow-lg">
-                            <span class="text-xl">${h.status === 'lunas' ? '✅' : '💳'}</span>
+                        <div class="w-12 h-12 ${h.status === 'lunas' ? 'gradient-income' : 'gradient-debt'} rounded-lg flex items-center justify-center mr-3 shadow-lg">
+                            <span class="text-base">${h.status === 'lunas' ? '✅' : '💳'}</span>
                         </div>
                         <div class="flex-1">
-                            <div class="flex items-center gap-2 mb-2">
-                                <h3 class="font-bold text-xl text-gray-800">${h.nama}</h3>
+                            <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-1">
+                                <h3 class="font-bold text-lg text-gray-800">${h.nama}</h3>
                                 ${h.status === 'lunas' ?
-                '<span class="inline-block bg-gradient-to-r from-green-100 to-green-200 text-green-600 text-xs px-3 py-1 rounded-full font-semibold">LUNAS</span>' :
-                '<span class="inline-block bg-gradient-to-r from-red-100 to-red-200 text-red-600 text-xs px-3 py-1 rounded-full font-semibold">BELUM LUNAS</span>'
+                '<span class="inline-block bg-gradient-to-r from-green-100 to-green-200 text-green-600 text-xs px-2 py-0.5 rounded-full font-semibold">LUNAS</span>' :
+                '<span class="inline-block bg-gradient-to-r from-red-100 to-red-200 text-red-600 text-xs px-2 py-0.5 rounded-full font-semibold">BELUM LUNAS</span>'
             }
                             </div>
-                            <p class="text-gray-500 text-sm font-medium flex items-center mb-3">
-                                <span class="mr-1">📅</span> ${h.tanggal}
+                            <p class="text-gray-500 text-xs font-medium flex items-center mb-2">
+                                <span class="mr-1">📅</span> ${formatDateIndonesian(h.tanggal)}
                             </p>
-                            
-                            <div class="grid grid-cols-2 gap-4 mb-3 bg-gray-50 rounded-lg p-3">
-                                <div class="pr-3 border-r-2 border-gray-300">
-                                    <p class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1">Hutang Awal</p>
-                                    <p class="text-lg font-bold text-purple-600">${formatCurrency(h.jumlah)}</p>
-                                </div>
-                                <div class="pl-3">
-                                    ${h.status === 'lunas' ? `
-                                        <p class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1">Sudah Dibayar</p>
-                                        <p class="text-lg font-bold text-green-600">${formatCurrency(h.jumlah)}</p>
-                                    ` : `
-                                        <p class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1">Sisa Hutang</p>
-                                        <p class="text-lg font-bold text-red-600">${formatCurrency(sisaHutang)}</p>
-                                    `}
-                                </div>
-                            </div>
-                            
-                            ${h.keterangan ? `
-                                <div class="bg-white/80 rounded-lg p-3 mb-3 border-l-4 border-blue-400">
-                                    <p class="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-1">Keterangan</p>
-                                    <p class="text-gray-700 text-sm capitalize">${h.keterangan}</p>
-                                </div>
-                            ` : ''}
-                            
-                            <div class="flex flex-wrap gap-2">
-                                ${h.status !== 'lunas' && h.whatsapp ? `
-                                    <button onclick="kirimPesan('${h.whatsapp}', '${h.nama}', ${sisaHutang})" 
-                                            class="gradient-income text-white px-3 py-2 rounded-lg text-xs font-semibold hover:scale-105 transition-all duration-300 shadow-lg modern-button flex items-center">
-                                        <span class="mr-1">📱</span> Ingatkan via WA
-                                    </button>
-                                ` : ''}
-                                
-                                ${h.status !== 'lunas' && h.email ? `
-                                    <button onclick="kirimEmail('${h.email}', '${h.nama}', ${sisaHutang})" 
-                                            class="bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-3 py-2 rounded-lg text-xs font-semibold hover:scale-105 transition-all duration-300 shadow-lg modern-button flex items-center">
-                                        <span class="mr-1">📧</span> Ingatkan via Email
-                                    </button>
-                                ` : ''}
-                                
-                                ${h.status !== 'lunas' ? `
-                                    <button onclick="bayarCicilan('${h.id}')" 
-                                            class="bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-3 py-2 rounded-lg text-xs font-semibold hover:scale-105 transition-all duration-300 shadow-lg modern-button flex items-center">
-                                        <span class="mr-1">💰</span> Bayar Cicilan
-                                    </button>
-                                    <button onclick="lunaskanHutang('${h.id}')" 
-                                            class="gradient-income text-white px-3 py-2 rounded-lg text-xs font-semibold hover:scale-105 transition-all duration-300 shadow-lg modern-button flex items-center">
-                                        <span class="mr-1">✅</span> Tandai Lunas
-                                    </button>
-                                ` : ''}
-                            </div>
                         </div>
                     </div>
-                    <div class="flex gap-2">
-                        <button onclick="editHutang('${h.id}')" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-300 shadow-md">
+                </div>
+
+                <div class="grid grid-cols-2 gap-2 mb-2 bg-gray-50 rounded-lg p-3">
+                    <div class="pr-2 border-r-2 border-gray-300">
+                        <p class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1">Hutang Awal</p>
+                        <p class="text-base font-bold text-purple-600">${formatCurrency(h.jumlah)}</p>
+                    </div>
+                    <div class="pl-2">
+                        ${h.status === 'lunas' ? `
+                            <p class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1">Sudah Dibayar</p>
+                            <p class="text-base font-bold text-green-600">${formatCurrency(h.jumlah)}</p>
+                        ` : `
+                            <p class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1">Sisa Hutang</p>
+                            <p class="text-base font-bold text-red-600">${formatCurrency(sisaHutang)}</p>
+                        `}
+                    </div>
+                </div>
+                
+                ${h.keterangan ? `
+                    <div class="bg-white/80 rounded-lg p-2 mb-2 border-l-4 border-blue-400">
+                        <p class="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-1">Keterangan</p>
+                        <p class="text-gray-700 text-sm capitalize">${h.keterangan}</p>
+                    </div>
+                ` : ''}
+                
+                <div class="flex flex-wrap gap-2 mt-4 w-full">
+                    <div class="flex gap-2 w-full">
+                        <button onclick="editHutang('${h.id}')" class="flex-1 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs font-semibold transition-all duration-300">
                             ✏️ Edit
                         </button>
-                        <button onclick="deleteHutang('${h.id}')" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-300 shadow-md">
+                        <button onclick="deleteHutang('${h.id}')" class="flex-1 bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs font-semibold transition-all duration-300">
                             🗑️ Hapus
                         </button>
                     </div>
+
+                    ${h.status !== 'lunas' ? `
+                        <div class="flex gap-2 w-full mt-2">
+                            <button onclick="bayarCicilan('${h.id}')" 
+                                    class="flex-1 bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-3 py-2 rounded-lg text-xs font-semibold hover:scale-105 transition-all duration-300 shadow-lg modern-button flex items-center justify-center">
+                                <span class="mr-1">💰</span> Bayar
+                            </button>
+                            <button onclick="lunaskanHutang('${h.id}')" 
+                                    class="flex-1 gradient-income text-white px-3 py-2 rounded-lg text-xs font-semibold hover:scale-105 transition-all duration-300 shadow-lg modern-button flex items-center justify-center">
+                                <span class="mr-1">✅</span> Lunas
+                            </button>
+                        </div>
+                    ` : ''}
+
+                    ${h.status !== 'lunas' && (h.whatsapp || h.email) ? `
+                        <div class="flex gap-2 w-full mt-2">
+                            ${h.whatsapp ? `
+                                <button onclick="kirimPesan('${h.whatsapp}', '${h.nama}', ${sisaHutang})" 
+                                        class="flex-1 gradient-income text-white px-3 py-2 rounded-lg text-xs font-semibold hover:scale-105 transition-all duration-300 shadow-lg modern-button flex items-center justify-center">
+                                    <span class="mr-1">📱</span> Ingatkan WA
+                                </button>
+                            ` : ''}
+                            ${h.email ? `
+                                <button onclick="kirimEmail('${h.email}', '${h.nama}', ${sisaHutang})" 
+                                        class="flex-1 bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-3 py-2 rounded-lg text-xs font-semibold hover:scale-105 transition-all duration-300 shadow-lg modern-button flex items-center justify-center">
+                                    <span class="mr-1">📧</span> Ingatkan Email
+                                </button>
+                            ` : ''}
+                        </div>
+                    ` : ''}
                 </div>
             </div>
         `;
     }).join('');
 }
+
+
+// Filter transactions
+function filterTransactions() {
+    const filter = document.getElementById('filter-transaksi').value;
+    displayTransactions(filter);
+}
+
+// Add transaction
+async function addTransaction(type, description, amount) {
+    const transaction = {
+        id: Date.now(),
+        date: new Date().toISOString(), // Simpan dalam format ISO untuk konsistensi
+        type,
+        description,
+        amount: parseInt(amount)
+    };
+
+    transaksi.unshift(transaction);
+    await saveData('Keuangan');
+
+    updateSummary();
+    displayTransactions();
+
+    const typeText = type === 'pemasukan' ? 'Pemasukan' : 'Pengeluaran';
+    showNotification(`${typeText} berhasil ditambahkan! Saldo telah terupdate.`, 'success');
+}
+
+// Display hutang
+function displayHutang(filter = 'semua') {
+    const container = document.getElementById('daftar-hutang');
+
+    let filteredHutang = hutangList;
+    if (filter !== 'semua') {
+        filteredHutang = hutangList.filter(h => h.status === filter);
+    }
+
+    if (filteredHutang.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-6 md:py-12">
+                <div class="w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-purple-100 to-purple-200 rounded-full flex items-center justify-center mx-auto mb-2 md:mb-4">
+                    <span class="text-xl md:text-3xl">📝</span>
+                </div>
+                <h3 class="text-base md:text-lg font-bold text-gray-600 mb-1 md:mb-2">Belum Ada Data Hutang</h3>
+                <p class="text-gray-500 text-xs md:text-sm">Tambahkan data hutang untuk mulai mengelola piutang Anda dengan lebih baik</p>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = filteredHutang.map(h => {
+        const sisaHutang = h.jumlah - h.cicilan;
+
+        return `
+            <div class="glass-card border-2 ${h.status === 'lunas' ? 'border-green-200 bg-gradient-to-r from-green-50/50 to-white' : 'border-gray-100'} rounded-lg p-4 relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-16 h-16 ${h.status === 'lunas' ? 'gradient-income' : 'gradient-debt'} opacity-10 rounded-full -mr-8 -mt-8"></div>
+                
+                <div class="flex items-start justify-between mb-2 relative z-10">
+                    <div class="flex items-start flex-1">
+                        <div class="w-12 h-12 ${h.status === 'lunas' ? 'gradient-income' : 'gradient-debt'} rounded-lg flex items-center justify-center mr-3 shadow-lg">
+                            <span class="text-base">${h.status === 'lunas' ? '✅' : '💳'}</span>
+                        </div>
+                        <div class="flex-1">
+                            <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-1">
+                                <h3 class="font-bold text-lg text-gray-800">${h.nama}</h3>
+                                ${h.status === 'lunas' ?
+                '<span class="inline-block bg-gradient-to-r from-green-100 to-green-200 text-green-600 text-xs px-2 py-0.5 rounded-full font-semibold">LUNAS</span>' :
+                '<span class="inline-block bg-gradient-to-r from-red-100 to-red-200 text-red-600 text-xs px-2 py-0.5 rounded-full font-semibold">BELUM LUNAS</span>'
+            }
+                            </div>
+                            <p class="text-gray-500 text-xs font-medium flex items-center mb-2">
+                                <span class="mr-1">📅</span> ${formatDateIndonesian(h.tanggal)}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2 mb-2 bg-gray-50 rounded-lg p-3">
+                    <div class="pr-2 border-r-2 border-gray-300">
+                        <p class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1">Hutang Awal</p>
+                        <p class="text-base font-bold text-purple-600">${formatCurrency(h.jumlah)}</p>
+                    </div>
+                    <div class="pl-2">
+                        ${h.status === 'lunas' ? `
+                            <p class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1">Sudah Dibayar</p>
+                            <p class="text-base font-bold text-green-600">${formatCurrency(h.jumlah)}</p>
+                        ` : `
+                            <p class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1">Sisa Hutang</p>
+                            <p class="text-base font-bold text-red-600">${formatCurrency(sisaHutang)}</p>
+                        `}
+                    </div>
+                </div>
+                
+                ${h.keterangan ? `
+                    <div class="bg-white/80 rounded-lg p-2 mb-2 border-l-4 border-blue-400">
+                        <p class="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-1">Keterangan</p>
+                        <p class="text-gray-700 text-sm capitalize">${h.keterangan}</p>
+                    </div>
+                ` : ''}
+                
+                <div class="flex flex-wrap gap-2 mt-4 w-full">
+                    <div class="flex gap-2 w-full">
+                        <button onclick="editHutang('${h.id}')" class="flex-1 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs font-semibold transition-all duration-300">
+                            ✏️ Edit
+                        </button>
+                        <button onclick="deleteHutang('${h.id}')" class="flex-1 bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs font-semibold transition-all duration-300">
+                            🗑️ Hapus
+                        </button>
+                    </div>
+
+                    ${h.status !== 'lunas' ? `
+                        <div class="flex gap-2 w-full mt-2">
+                            <button onclick="bayarCicilan('${h.id}')" 
+                                    class="flex-1 bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-3 py-2 rounded-lg text-xs font-semibold hover:scale-105 transition-all duration-300 shadow-lg modern-button flex items-center justify-center">
+                                <span class="mr-1">💰</span> Bayar
+                            </button>
+                            <button onclick="lunaskanHutang('${h.id}')" 
+                                    class="flex-1 gradient-income text-white px-3 py-2 rounded-lg text-xs font-semibold hover:scale-105 transition-all duration-300 shadow-lg modern-button flex items-center justify-center">
+                                <span class="mr-1">✅</span> Lunas
+                            </button>
+                        </div>
+                    ` : ''}
+
+                    ${h.status !== 'lunas' && (h.whatsapp || h.email) ? `
+                        <div class="flex gap-2 w-full mt-2">
+                            ${h.whatsapp ? `
+                                <button onclick="kirimPesan('${h.whatsapp}', '${h.nama}', ${sisaHutang})" 
+                                        class="flex-1 gradient-income text-white px-3 py-2 rounded-lg text-xs font-semibold hover:scale-105 transition-all duration-300 shadow-lg modern-button flex items-center justify-center">
+                                    <span class="mr-1">📱</span> Ingatkan WA
+                                </button>
+                            ` : ''}
+                            ${h.email ? `
+                                <button onclick="kirimEmail('${h.email}', '${h.nama}', ${sisaHutang})" 
+                                        class="flex-1 bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-3 py-2 rounded-lg text-xs font-semibold hover:scale-105 transition-all duration-300 shadow-lg modern-button flex items-center justify-center">
+                                    <span class="mr-1">📧</span> Ingatkan Email
+                                </button>
+                            ` : ''}
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
 
 // Filter hutang
 function filterHutang() {
@@ -338,7 +526,7 @@ async function addHutang(nama, jumlah, keterangan, whatsapp, email) {
         keterangan,
         whatsapp,
         email,
-        tanggal: formatDateIndonesian(new Date()),
+        tanggal: new Date().toISOString(), // Simpan dalam format ISO untuk konsistensi
         cicilan: 0,
         sisaHutang: parseInt(jumlah),
         status: 'belum_lunas'
@@ -430,7 +618,7 @@ function deleteTransaction(id) {
                 <p class="text-lg font-bold ${transaction.type === 'pemasukan' ? 'text-green-600' : 'text-red-600'}">
                     ${transaction.type === 'pemasukan' ? '+' : '-'} ${formatCurrency(transaction.amount)}
                 </p>
-                <p class="text-sm text-gray-500">${transaction.date}</p>
+                <p class="text-sm text-gray-500">${formatDateIndonesian(transaction.date)}</p>
             </div>
         </div>
         
@@ -540,7 +728,7 @@ function deleteHutang(id) {
                 <p class="font-semibold text-gray-800">${hutang.nama}</p>
                 <p class="text-lg font-bold text-purple-600">${formatCurrency(hutang.jumlah)}</p>
                 ${hutang.keterangan ? `<p class="text-sm text-gray-500">${hutang.keterangan}</p>` : ''}
-                <p class="text-sm text-gray-500">${hutang.tanggal}</p>
+                <p class="text-sm text-gray-500">${formatDateIndonesian(hutang.tanggal)}</p>
             </div>
         </div>
         
@@ -671,7 +859,7 @@ function lunaskanHutang(id) {
                 <p class="font-semibold text-gray-800">${hutang.nama}</p>
                 <p class="text-lg font-bold text-purple-600">${formatCurrency(hutang.jumlah)}</p>
                 ${hutang.keterangan ? `<p class="text-sm text-gray-500">${hutang.keterangan}</p>` : ''}
-                <p class="text-sm text-gray-500">${hutang.tanggal}</p>
+                <p class="text-sm text-gray-500">${formatDateIndonesian(hutang.tanggal)}</p>
             </div>
         </div>
         
@@ -712,25 +900,25 @@ function updateFormAppearance(type) {
     const submitBtn = document.getElementById('submit-btn');
 
     if (type === 'pemasukan') {
-        formIcon.className = 'w-12 h-12 gradient-income rounded-lg flex items-center justify-center mx-auto mb-4 shadow-lg';
-        formIcon.innerHTML = '<span class="text-lg">💰</span>';
+        formIcon.className = 'w-10 h-10 md:w-12 md:h-12 gradient-income rounded-lg flex items-center justify-center mx-auto mb-2 md:mb-4 shadow-lg';
+        formIcon.innerHTML = '<span class="text-base md:text-lg">💰</span>';
         formTitle.textContent = 'Tambah Pemasukan';
-        formTitle.className = 'text-xl font-bold text-green-600 mb-2';
-        submitBtn.className = 'w-full px-8 py-3 rounded-lg font-bold text-sm gradient-income text-white hover:scale-105 transition-all duration-300 shadow-lg modern-button';
+        formTitle.className = 'text-lg md:text-xl font-bold text-green-600 mb-1 md:mb-2';
+        submitBtn.className = 'w-full px-6 py-2 md:px-8 md:py-3 rounded-lg font-bold text-sm gradient-income text-white hover:scale-105 transition-all duration-300 shadow-lg modern-button';
         submitBtn.innerHTML = 'Tambah Pemasukan';
     } else if (type === 'pengeluaran') {
-        formIcon.className = 'w-12 h-12 gradient-expense rounded-lg flex items-center justify-center mx-auto mb-4 shadow-lg';
-        formIcon.innerHTML = '<span class="text-lg">💸</span>';
+        formIcon.className = 'w-10 h-10 md:w-12 md:h-12 gradient-expense rounded-lg flex items-center justify-center mx-auto mb-2 md:mb-4 shadow-lg';
+        formIcon.innerHTML = '<span class="text-base md:text-lg">💸</span>';
         formTitle.textContent = 'Tambah Pengeluaran';
-        formTitle.className = 'text-xl font-bold text-red-600 mb-2';
-        submitBtn.className = 'w-full px-8 py-3 rounded-lg font-bold text-sm gradient-expense text-white hover:scale-105 transition-all duration-300 shadow-lg modern-button';
+        formTitle.className = 'text-lg md:text-xl font-bold text-red-600 mb-1 md:mb-2';
+        submitBtn.className = 'w-full px-6 py-2 md:px-8 md:py-3 rounded-lg font-bold text-sm gradient-expense text-white hover:scale-105 transition-all duration-300 shadow-lg modern-button';
         submitBtn.innerHTML = 'Tambah Pengeluaran';
     } else {
-        formIcon.className = 'w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center mx-auto mb-4 shadow-lg';
-        formIcon.innerHTML = '<span class="text-lg">📝</span>';
+        formIcon.className = 'w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center mx-auto mb-2 md:mb-4 shadow-lg';
+        formIcon.innerHTML = '<span class="text-base md:text-lg">📝</span>';
         formTitle.textContent = 'Tambah Transaksi Baru';
-        formTitle.className = 'text-xl font-bold text-blue-600 mb-2';
-        submitBtn.className = 'w-full px-8 py-3 rounded-lg font-bold text-sm bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:scale-105 transition-all duration-300 shadow-lg modern-button';
+        formTitle.className = 'text-lg md:text-xl font-bold text-blue-600 mb-1 md:mb-2';
+        submitBtn.className = 'w-full px-6 py-2 md:px-8 md:py-3 rounded-lg font-bold text-sm bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:scale-105 transition-all duration-300 shadow-lg modern-button';
         submitBtn.innerHTML = 'Tambah Transaksi';
     }
 }
@@ -774,14 +962,23 @@ async function loadData() {
         const response = await fetch(SPREADSHEET_URL + '?action=getData');
         const data = await response.json();
 
-        transaksi = data.keuangan.map(item => ({ ...item, id: parseInt(item.id), amount: parseInt(item.amount) }));
-        hutangList = data.hutang.map(item => ({
-            ...item,
-            id: parseInt(item.id),
-            jumlah: parseInt(item.jumlah),
-            cicilan: parseInt(item.cicilan || 0),
-            sisaHutang: parseInt(item.sisaHutang || 0)
-        }));
+        transaksi = data.keuangan.map(item => {
+            return {
+                ...item,
+                id: parseInt(item.id),
+                amount: parseInt(item.amount),
+            };
+        });
+
+        hutangList = data.hutang.map(item => {
+            return {
+                ...item,
+                id: parseInt(item.id),
+                jumlah: parseInt(item.jumlah),
+                cicilan: parseInt(item.cicilan || 0),
+                sisaHutang: parseInt(item.sisaHutang || 0)
+            };
+        });
 
         displayTransactions();
         updateSummary();

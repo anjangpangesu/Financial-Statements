@@ -36,18 +36,18 @@
 
 <body class="min-h-screen bg-white">
     <nav class="sticky top-0 z-50 bg-white shadow-lg border-b border-gray-200">
-        <div class="container mx-auto px-4">
-            <div class="flex items-center justify-between py-4">
+        <div class="container mx-auto px-4 md:px-8">
+            <div class="flex items-center justify-between py-3 md:py-4">
                 <div class="flex items-center">
-                    <h1 class="text-xl font-bold text-gray-800">💰 Financial Statements</h1>
+                    <h1 class="text-lg md:text-xl font-bold text-gray-800">💰 Financial Statements</h1>
                 </div>
-                <div class="flex space-x-4">
+                <div class="flex space-x-2 md:space-x-4">
                     <button onclick="showTab('keuangan')" id="tab-keuangan"
-                        class="px-6 py-2 rounded-lg font-semibold text-sm transition-all duration-300 bg-blue-500 text-white hover:bg-blue-600">
+                        class="px-3 py-1 md:px-6 md:py-2 rounded-lg font-semibold text-xs md:text-sm transition-all duration-300 bg-blue-500 text-white hover:bg-blue-600">
                         💰 Manajemen Keuangan
                     </button>
                     <button onclick="showTab('hutang')" id="tab-hutang"
-                        class="px-6 py-2 rounded-lg font-semibold text-sm transition-all duration-300 text-gray-600 hover:bg-purple-100 border border-purple-300 hover:border-purple-400">
+                        class="px-3 py-1 md:px-6 md:py-2 rounded-lg font-semibold text-xs md:text-sm transition-all duration-300 text-gray-600 hover:bg-purple-100 border border-purple-300 hover:border-purple-400">
                         💳 Manajemen Hutang
                     </button>
                 </div>
@@ -56,74 +56,75 @@
     </nav>
 
     <div id="modal-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
-        <div class="bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl">
+        <div class="bg-white rounded-xl p-4 md:p-6 max-w-sm md:max-w-md w-full mx-4 shadow-2xl">
             <div id="modal-content">
             </div>
         </div>
     </div>
 
-    <main class="container mx-auto px-4 py-6">
+    <main class="container mx-auto px-4 py-4 md:py-6">
         <div id="content-keuangan" class="tab-content slide-in">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div class="glass-card rounded-xl p-6 hover-lift relative overflow-hidden">
-                    <div class="absolute top-0 right-0 w-20 h-20 gradient-income opacity-10 rounded-full -mr-10 -mt-10">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8">
+                <div class="glass-card rounded-xl p-4 md:p-6 hover-lift relative overflow-hidden">
+                    <div
+                        class="absolute top-0 right-0 w-16 h-16 md:w-20 md:h-20 gradient-income opacity-10 rounded-full -mr-8 -mt-8 md:-mr-10 md:-mt-10">
                     </div>
                     <div class="relative z-10">
-                        <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center justify-between mb-2 md:mb-4">
                             <div
-                                class="w-12 h-12 gradient-income rounded-lg flex items-center justify-center shadow-lg">
-                                <span class="text-lg">💰</span>
+                                class="w-10 h-10 md:w-12 md:h-12 gradient-income rounded-lg flex items-center justify-center shadow-lg">
+                                <span class="text-base md:text-lg">💰</span>
                             </div>
                             <div class="text-right">
                                 <p class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Total</p>
                                 <p class="text-sm font-bold text-green-600">Pemasukan</p>
                             </div>
                         </div>
-                        <p id="total-pemasukan" class="text-2xl font-bold text-green-600 mb-2">Rp 0</p>
+                        <p id="total-pemasukan" class="text-xl md:text-2xl font-bold text-green-600 mb-2">Rp 0</p>
                         <div class="flex items-center text-green-500">
                             <span class="text-xs font-medium">↗️ Trend Positif</span>
                         </div>
                     </div>
                 </div>
 
-                <div class="glass-card rounded-xl p-6 hover-lift relative overflow-hidden">
+                <div class="glass-card rounded-xl p-4 md:p-6 hover-lift relative overflow-hidden">
                     <div
-                        class="absolute top-0 right-0 w-20 h-20 gradient-expense opacity-10 rounded-full -mr-10 -mt-10">
+                        class="absolute top-0 right-0 w-16 h-16 md:w-20 md:h-20 gradient-expense opacity-10 rounded-full -mr-8 -mt-8 md:-mr-10 md:-mt-10">
                     </div>
                     <div class="relative z-10">
-                        <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center justify-between mb-2 md:mb-4">
                             <div
-                                class="w-12 h-12 gradient-expense rounded-lg flex items-center justify-center shadow-lg">
-                                <span class="text-lg">💸</span>
+                                class="w-10 h-10 md:w-12 md:h-12 gradient-expense rounded-lg flex items-center justify-center shadow-lg">
+                                <span class="text-base md:text-lg">💸</span>
                             </div>
                             <div class="text-right">
                                 <p class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Total</p>
                                 <p class="text-sm font-bold text-red-600">Pengeluaran</p>
                             </div>
                         </div>
-                        <p id="total-pengeluaran" class="text-2xl font-bold text-red-600 mb-2">Rp 0</p>
+                        <p id="total-pengeluaran" class="text-xl md:text-2xl font-bold text-red-600 mb-2">Rp 0</p>
                         <div class="flex items-center text-red-500">
                             <span class="text-xs font-medium">↘️ Monitoring</span>
                         </div>
                     </div>
                 </div>
 
-                <div class="glass-card rounded-xl p-6 hover-lift relative overflow-hidden">
+                <div class="glass-card rounded-xl p-4 md:p-6 hover-lift relative overflow-hidden">
                     <div
-                        class="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-blue-400 to-cyan-500 opacity-10 rounded-full -mr-10 -mt-10">
+                        class="absolute top-0 right-0 w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-blue-400 to-cyan-500 opacity-10 rounded-full -mr-8 -mt-8 md:-mr-10 md:-mt-10">
                     </div>
                     <div class="relative z-10">
-                        <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center justify-between mb-2 md:mb-4">
                             <div
-                                class="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center shadow-lg">
-                                <span class="text-lg">💵</span>
+                                class="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center shadow-lg">
+                                <span class="text-base md:text-lg">💵</span>
                             </div>
                             <div class="text-right">
                                 <p class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Saldo</p>
                                 <p class="text-sm font-bold text-blue-600">Terkini</p>
                             </div>
                         </div>
-                        <p id="saldo-terkini" class="text-2xl font-bold text-blue-600 mb-2">Rp 0</p>
+                        <p id="saldo-terkini" class="text-xl md:text-2xl font-bold text-blue-600 mb-2">Rp 0</p>
                         <div class="flex items-center text-blue-500">
                             <span class="text-xs font-medium">💰 Balance</span>
                         </div>
@@ -131,52 +132,58 @@
                 </div>
             </div>
 
-            <div class="mb-8">
-                <div class="glass-card rounded-xl p-6">
-                    <div class="text-center mb-6">
+            <div class="mb-6 md:mb-8">
+                <div class="glass-card rounded-xl p-4 md:p-6">
+                    <div class="text-center mb-4 md:mb-6">
                         <div id="form-icon"
-                            class="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center mx-auto mb-4 shadow-lg">
-                            <span class="text-lg">📋</span>
+                            class="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center mx-auto mb-2 md:mb-4 shadow-lg">
+                            <span class="text-base md:text-lg">📋</span>
                         </div>
-                        <h2 id="form-title" class="text-xl font-bold text-blue-600 mb-2">Tambah Transaksi Baru</h2>
-                        <p class="text-gray-600 text-sm">Kelola pemasukan dan pengeluaran Anda dengan mudah</p>
+                        <h2 id="form-title" class="text-lg md:text-xl font-bold text-blue-600 mb-1 md:mb-2">Tambah
+                            Transaksi Baru</h2>
+                        <p class="text-gray-600 text-xs md:text-sm">Kelola pemasukan dan pengeluaran Anda dengan mudah
+                        </p>
                     </div>
 
-                    <form id="form-transaksi" class="space-y-4">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <form id="form-transaksi" class="space-y-3 md:space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
                             <div>
-                                <label class="block text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">
+                                <label
+                                    class="block text-xs font-semibold text-gray-700 mb-1 md:mb-2 uppercase tracking-wide">
                                     📊 Jenis Transaksi
                                 </label>
                                 <select id="jenis-transaksi"
-                                    class="w-full px-4 py-3 rounded-lg modern-input text-sm font-medium" required>
+                                    class="w-full px-3 py-2 md:px-4 md:py-3 rounded-lg modern-input text-sm font-medium"
+                                    required>
                                     <option value="">Pilih jenis transaksi...</option>
                                     <option value="pemasukan">💰 Pemasukan</option>
                                     <option value="pengeluaran">💸 Pengeluaran</option>
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">
+                                <label
+                                    class="block text-xs font-semibold text-gray-700 mb-1 md:mb-2 uppercase tracking-wide">
                                     💵 Jumlah
                                 </label>
                                 <input type="number" id="jumlah-transaksi"
-                                    class="w-full px-4 py-3 rounded-lg modern-input text-sm font-medium" placeholder="0"
-                                    required>
+                                    class="w-full px-3 py-2 md:px-4 md:py-3 rounded-lg modern-input text-sm font-medium"
+                                    placeholder="0" required>
                             </div>
                         </div>
 
                         <div>
-                            <label class="block text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">
+                            <label
+                                class="block text-xs font-semibold text-gray-700 mb-1 md:mb-2 uppercase tracking-wide">
                                 📝 Keterangan
                             </label>
                             <input type="text" id="keterangan-transaksi"
-                                class="w-full px-4 py-3 rounded-lg modern-input text-sm"
+                                class="w-full px-3 py-2 md:px-4 md:py-3 rounded-lg modern-input text-sm"
                                 placeholder="Contoh: Gaji bulanan, Makan siang, Transport..." required>
                         </div>
 
-                        <div class="pt-4">
+                        <div class="pt-3 md:pt-4">
                             <button type="submit" id="submit-btn"
-                                class="w-full px-8 py-3 rounded-lg font-bold text-sm bg-gradient-to-r from-blue-500 to-cyan-500 text-white transition-all duration-300 shadow-lg modern-button">
+                                class="w-full px-6 py-2 md:px-8 md:py-3 rounded-lg font-bold text-sm bg-gradient-to-r from-blue-500 to-cyan-500 text-white transition-all duration-300 shadow-lg modern-button">
                                 Tambah Transaksi
                             </button>
                         </div>
@@ -184,20 +191,21 @@
                 </div>
             </div>
 
-            <div class="glass-card rounded-xl p-6">
-                <div class="flex items-center justify-between mb-6">
-                    <div class="flex items-center">
+            <div class="glass-card rounded-xl p-4 md:p-6">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4 md:mb-6">
+                    <div class="flex items-center mb-4 md:mb-0">
                         <div
-                            class="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center mr-4 shadow-lg">
-                            <span class="text-lg">📊</span>
+                            class="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center mr-3 md:mr-4 shadow-lg">
+                            <span class="text-base md:text-lg">📊</span>
                         </div>
                         <div>
-                            <h2 class="text-xl font-bold text-blue-600">Riwayat Transaksi</h2>
-                            <p class="text-gray-600 text-sm">Pantau semua aktivitas keuangan Anda</p>
+                            <h2 class="text-lg md:text-xl font-bold text-blue-600">Riwayat Transaksi</h2>
+                            <p class="text-gray-600 text-xs md:text-sm">Pantau semua aktivitas keuangan Anda</p>
                         </div>
                     </div>
                     <div>
-                        <select id="filter-transaksi" class="px-4 py-2 rounded-lg modern-input text-sm font-medium"
+                        <select id="filter-transaksi"
+                            class="w-full px-3 py-2 md:px-4 md:py-2 rounded-lg modern-input text-xs md:text-sm font-medium"
                             onchange="filterTransactions()">
                             <option value="semua">Semua Transaksi</option>
                             <option value="pemasukan">Pemasukan</option>
@@ -207,13 +215,14 @@
                 </div>
 
                 <div id="riwayat-transaksi" class="space-y-4">
-                    <div class="text-center py-12">
+                    <div class="text-center py-6 md:py-12">
                         <div
-                            class="w-20 h-20 bg-gradient-to-br from-blue-100 to-cyan-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <span class="text-3xl">📝</span>
+                            class="w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-blue-100 to-cyan-100 rounded-full flex items-center justify-center mx-auto mb-2 md:mb-4">
+                            <span class="text-xl md:text-3xl">📝</span>
                         </div>
-                        <h3 class="text-lg font-bold text-gray-600 mb-2">Belum Ada Transaksi</h3>
-                        <p class="text-gray-500 text-sm">Mulai tambahkan pemasukan atau pengeluaran Anda untuk melihat
+                        <h3 class="text-base md:text-lg font-bold text-gray-600 mb-1 md:mb-2">Belum Ada Transaksi</h3>
+                        <p class="text-gray-500 text-xs md:text-sm">Mulai tambahkan pemasukan atau pengeluaran Anda
+                            untuk melihat
                             riwayat di sini</p>
                     </div>
                 </div>
@@ -221,67 +230,67 @@
         </div>
 
         <div id="content-hutang" class="tab-content hidden slide-in">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div class="glass-card rounded-xl p-6 hover-lift relative overflow-hidden">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8">
+                <div class="glass-card rounded-xl p-4 md:p-6 hover-lift relative overflow-hidden">
                     <div
-                        class="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-purple-400 to-purple-600 opacity-10 rounded-full -mr-10 -mt-10">
+                        class="absolute top-0 right-0 w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-purple-400 to-purple-600 opacity-10 rounded-full -mr-8 -mt-8 md:-mr-10 md:-mt-10">
                     </div>
                     <div class="relative z-10">
-                        <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center justify-between mb-2 md:mb-4">
                             <div
-                                class="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center shadow-lg">
-                                <span class="text-lg">👥</span>
+                                class="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center shadow-lg">
+                                <span class="text-base md:text-lg">👥</span>
                             </div>
                             <div class="text-right">
                                 <p class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Total</p>
                                 <p class="text-sm font-bold text-purple-600">Peminjam</p>
                             </div>
                         </div>
-                        <p id="total-peminjam" class="text-2xl font-bold text-purple-600 mb-2">0</p>
+                        <p id="total-peminjam" class="text-xl md:text-2xl font-bold text-purple-600 mb-2">0</p>
                         <div class="flex items-center text-purple-500">
                             <span class="text-xs font-medium">👤 Orang</span>
                         </div>
                     </div>
                 </div>
 
-                <div class="glass-card rounded-xl p-6 hover-lift relative overflow-hidden">
+                <div class="glass-card rounded-xl p-4 md:p-6 hover-lift relative overflow-hidden">
                     <div
-                        class="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-red-400 to-red-600 opacity-10 rounded-full -mr-10 -mt-10">
+                        class="absolute top-0 right-0 w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-red-400 to-red-600 opacity-10 rounded-full -mr-8 -mt-8 md:-mr-10 md:-mt-10">
                     </div>
                     <div class="relative z-10">
-                        <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center justify-between mb-2 md:mb-4">
                             <div
-                                class="w-12 h-12 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center shadow-lg">
-                                <span class="text-lg">⏰</span>
+                                class="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center shadow-lg">
+                                <span class="text-base md:text-lg">⏰</span>
                             </div>
                             <div class="text-right">
                                 <p class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Hutang</p>
                                 <p class="text-sm font-bold text-red-600">Belum Lunas</p>
                             </div>
                         </div>
-                        <p id="total-hutang-belum-lunas" class="text-2xl font-bold text-red-600 mb-2">0</p>
+                        <p id="total-hutang-belum-lunas" class="text-xl md:text-2xl font-bold text-red-600 mb-2">0</p>
                         <div class="flex items-center text-red-500">
                             <span class="text-xs font-medium">📋 Transaksi</span>
                         </div>
                     </div>
                 </div>
 
-                <div class="glass-card rounded-xl p-6 hover-lift relative overflow-hidden">
+                <div class="glass-card rounded-xl p-4 md:p-6 hover-lift relative overflow-hidden">
                     <div
-                        class="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-orange-400 to-orange-600 opacity-10 rounded-full -mr-10 -mt-10">
+                        class="absolute top-0 right-0 w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-orange-400 to-orange-600 opacity-10 rounded-full -mr-8 -mt-8 md:-mr-10 md:-mt-10">
                     </div>
                     <div class="relative z-10">
-                        <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center justify-between mb-2 md:mb-4">
                             <div
-                                class="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center shadow-lg">
-                                <span class="text-lg">💰</span>
+                                class="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center shadow-lg">
+                                <span class="text-base md:text-lg">💰</span>
                             </div>
                             <div class="text-right">
                                 <p class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Total</p>
                                 <p class="text-sm font-bold text-orange-600">Diutangin</p>
                             </div>
                         </div>
-                        <p id="total-uang-diutangin" class="text-2xl font-bold text-orange-600 mb-2">Rp 0</p>
+                        <p id="total-uang-diutangin" class="text-xl md:text-2xl font-bold text-orange-600 mb-2">Rp 0</p>
                         <div class="flex items-center text-orange-500">
                             <span class="text-xs font-medium">💸 Outstanding</span>
                         </div>
@@ -289,84 +298,92 @@
                 </div>
             </div>
 
-            <div class="glass-card rounded-xl p-6 mb-8">
-                <div class="text-center mb-6">
+            <div class="glass-card rounded-xl p-4 md:p-6 mb-6 md:mb-8">
+                <div class="text-center mb-4 md:mb-6">
                     <div
-                        class="w-12 h-12 gradient-debt rounded-lg flex items-center justify-center mx-auto mb-4 shadow-lg">
-                        <span class="text-lg">📋</span>
+                        class="w-10 h-10 md:w-12 md:h-12 gradient-debt rounded-lg flex items-center justify-center mx-auto mb-2 md:mb-4 shadow-lg">
+                        <span class="text-base md:text-lg">📋</span>
                     </div>
-                    <h2 class="text-xl font-bold text-purple-600 mb-2">Tambah Hutang Baru</h2>
-                    <p class="text-gray-600 text-sm">Kelola dan pantau hutang piutang dengan sistematis</p>
+                    <h2 class="text-lg md:text-xl font-bold text-purple-600 mb-1 md:mb-2">Tambah Hutang Baru</h2>
+                    <p class="text-gray-600 text-xs md:text-sm">Kelola dan pantau hutang piutang dengan sistematis</p>
                 </div>
 
-                <form id="form-hutang" class="space-y-4">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <form id="form-hutang" class="space-y-3 md:space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
                         <div>
-                            <label class="block text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">
+                            <label
+                                class="block text-xs font-semibold text-gray-700 mb-1 md:mb-2 uppercase tracking-wide">
                                 👤 Nama Penghutang
                             </label>
                             <input type="text" id="nama-penghutang"
-                                class="w-full px-4 py-3 rounded-lg modern-input text-sm font-medium"
+                                class="w-full px-3 py-2 md:px-4 md:py-3 rounded-lg modern-input text-sm font-medium"
                                 placeholder="Nama lengkap" required>
                         </div>
                         <div>
-                            <label class="block text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">
+                            <label
+                                class="block text-xs font-semibold text-gray-700 mb-1 md:mb-2 uppercase tracking-wide">
                                 💰 Jumlah Hutang
                             </label>
                             <input type="number" id="jumlah-hutang"
-                                class="w-full px-4 py-3 rounded-lg modern-input text-sm font-medium" placeholder="0"
-                                required>
+                                class="w-full px-3 py-2 md:px-4 md:py-3 rounded-lg modern-input text-sm font-medium"
+                                placeholder="0" required>
                         </div>
                     </div>
 
                     <div>
-                        <label class="block text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">
+                        <label class="block text-xs font-semibold text-gray-700 mb-1 md:mb-2 uppercase tracking-wide">
                             📝 Keterangan
                         </label>
-                        <textarea id="keterangan-hutang" class="w-full px-4 py-3 rounded-lg modern-input text-sm"
-                            rows="3" placeholder="Detail hutang, keperluan, tanggal jatuh tempo..."></textarea>
+                        <textarea id="keterangan-hutang"
+                            class="w-full px-3 py-2 md:px-4 md:py-3 rounded-lg modern-input text-sm" rows="2"
+                            placeholder="Detail hutang, keperluan, tanggal jatuh tempo..."></textarea>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
                         <div>
-                            <label class="block text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">
+                            <label
+                                class="block text-xs font-semibold text-gray-700 mb-1 md:mb-2 uppercase tracking-wide">
                                 📱 WhatsApp (Opsional)
                             </label>
                             <input type="tel" id="whatsapp-penghutang"
-                                class="w-full px-4 py-3 rounded-lg modern-input text-sm" placeholder="08xxxxxxxxxx">
+                                class="w-full px-3 py-2 md:px-4 md:py-3 rounded-lg modern-input text-sm"
+                                placeholder="08xxxxxxxxxx">
                         </div>
                         <div>
-                            <label class="block text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">
+                            <label
+                                class="block text-xs font-semibold text-gray-700 mb-1 md:mb-2 uppercase tracking-wide">
                                 📧 Email (Opsional)
                             </label>
                             <input type="email" id="email-penghutang"
-                                class="w-full px-4 py-3 rounded-lg modern-input text-sm"
+                                class="w-full px-3 py-2 md:px-4 md:py-3 rounded-lg modern-input text-sm"
                                 placeholder="email@example.com">
                         </div>
                     </div>
 
-                    <div class="pt-4">
+                    <div class="pt-3 md:pt-4">
                         <button type="submit"
-                            class="w-full px-8 py-3 rounded-lg font-bold text-sm gradient-debt text-white duration-300 shadow-lg modern-button">
+                            class="w-full px-6 py-2 md:px-8 md:py-3 rounded-lg font-bold text-sm gradient-debt text-white duration-300 shadow-lg modern-button">
                             Tambah Hutang
                         </button>
                     </div>
                 </form>
             </div>
 
-            <div class="glass-card rounded-xl p-6">
-                <div class="flex items-center justify-between mb-6">
-                    <div class="flex items-center">
-                        <div class="w-12 h-12 gradient-debt rounded-lg flex items-center justify-center mr-4 shadow-lg">
-                            <span class="text-lg">📊</span>
+            <div class="glass-card rounded-xl p-4 md:p-6">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4 md:mb-6">
+                    <div class="flex items-center mb-4 md:mb-0">
+                        <div
+                            class="w-10 h-10 md:w-12 md:h-12 gradient-debt rounded-lg flex items-center justify-center mr-3 md:mr-4 shadow-lg">
+                            <span class="text-base md:text-lg">📊</span>
                         </div>
                         <div>
-                            <h2 class="text-xl font-bold text-purple-600">Daftar Hutang</h2>
-                            <p class="text-gray-600 text-sm">Pantau status pembayaran hutang</p>
+                            <h2 class="text-lg md:text-xl font-bold text-purple-600">Daftar Hutang</h2>
+                            <p class="text-gray-600 text-xs md:text-sm">Pantau status pembayaran hutang</p>
                         </div>
                     </div>
                     <div>
-                        <select id="filter-hutang" class="px-4 py-2 rounded-lg modern-input text-sm font-medium"
+                        <select id="filter-hutang"
+                            class="w-full px-3 py-2 md:px-4 md:py-2 rounded-lg modern-input text-xs md:text-sm font-medium"
                             onchange="filterHutang()">
                             <option value="semua">Semua Daftar</option>
                             <option value="belum_lunas">Belum Lunas</option>
@@ -376,13 +393,14 @@
                 </div>
 
                 <div id="daftar-hutang" class="space-y-4">
-                    <div class="text-center py-12">
+                    <div class="text-center py-6 md:py-12">
                         <div
-                            class="w-20 h-20 bg-gradient-to-br from-orange-100 to-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <span class="text-3xl">📝</span>
+                            class="w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-orange-100 to-red-100 rounded-full flex items-center justify-center mx-auto mb-2 md:mb-4">
+                            <span class="text-xl md:text-3xl">📝</span>
                         </div>
-                        <h3 class="text-lg font-bold text-gray-600 mb-2">Belum Ada Data Hutang</h3>
-                        <p class="text-gray-500 text-sm">Tambahkan data hutang untuk mulai mengelola piutang Anda dengan
+                        <h3 class="text-base md:text-lg font-bold text-gray-600 mb-1 md:mb-2">Belum Ada Data Hutang</h3>
+                        <p class="text-gray-500 text-xs md:text-sm">Tambahkan data hutang untuk mulai mengelola piutang
+                            Anda dengan
                             lebih baik</p>
                     </div>
                 </div>
